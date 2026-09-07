@@ -62,8 +62,31 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 Route Handler
-app.use((req, res) => {
+const path = require('path');
+const fs = require('fs');
+
+// Serve client static build files in unified production deployment
+const candidateClientPaths = [
+  path.join(__dirname, '../../client/dist'),
+  path.resolve(process.cwd(), 'client/dist'),
+  path.resolve(process.cwd(), '../client/dist')
+];
+
+const clientDistPath = candidateClientPaths.find(p => fs.existsSync(p));
+if (clientDistPath) {
+  app.use(express.static(clientDistPath));
+}
+
+// 404 Route Handler for unmatched API endpoints
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.originalUrl} not found.` });
+});
+
+// SPA fallback for all frontend React routes
+app.get('*', (req, res) => {
+  if (clientDistPath && fs.existsSync(path.join(clientDistPath, 'index.html'))) {
+    return res.sendFile(path.join(clientDistPath, 'index.html'));
+  }
   res.status(404).json({ error: `Route ${req.method} ${req.originalUrl} not found.` });
 });
 

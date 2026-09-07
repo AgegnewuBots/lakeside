@@ -622,12 +622,20 @@ Date: 2026-09-07 (Release 3.9.1 - Git VCS Initialization, Security Shielding & D
     - Verified Git toolchain availability (Mingit) on local Windows host.
 
 
+Date: 2026-09-07 (Release 3.9.2 - Single-Service Unified Render Full-Stack Deployment)
+  • Unified Express Frontend & Backend Serving:
+    - Configured server/src/index.js to serve production Vite static distribution assets from client/dist.
+    - Implemented SPA client-side routing fallback (* -> client/dist/index.html) preserving client-side React routes.
+    - Added root npm build and start scripts enabling single Web Service deployment on Render with zero split-hosting complexity.
+
+
 10. VERIFICATION & STATUS
 --------------------------------------------------------------------------------
 Last Updated: 2026-09-07 (01/01/2018 E.C.)
-Documentation Version: 3.9.1
-Status: Production-Ready & Verified (Vite Build 0 Errors, Clean SQLite DB, 77/77 Automated Tests Passed, Git VCS Initialized)
+Documentation Version: 3.9.2
+Status: Production-Ready & Verified (Vite Build 0 Errors, Clean SQLite DB, 77/77 Automated Tests Passed, Unified Full-Stack Live on Render)
 ================================================================================
+
 
 
 
