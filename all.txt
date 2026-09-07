@@ -1,0 +1,784 @@
+================================================================================
+LAKE SIDE ACADEMY | ሌክ ሳይድ አካዳሚ
+COMPLETE ARCHITECTURAL MASTER MANUAL & SYSTEM DESIGN SPECIFICATION
+================================================================================
+Document File: all.txt
+System Version: Release 3.9.0 (Dynamic Assessments, School ID Manager, Promotion & Passing Threshold Engine, Dual-Mode Student Intake & Re-Enrollment)
+Last Updated: September 2026 (2018 E.C.)
+Status: Verified Production Architecture (77/77 Tests Passed)
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. Institutional Identity & Design System
+2. Strict Role-Based Access Control (RBAC) & Workspace Confinement
+3. Faculty Teacher Workspace, Account Settings & Privacy Safeguards
+4. Academic Structure, Dynamic Section Management & Curriculum Subject Matrix
+5. Ethiopian Calendar (E.C.) Engine & Session Architecture
+6. Continuous Assessment & Ranking Engine
+7. Class & Parent SMS Broadcast (Whole Section & Individual Student Targeting)
+8. Student Registration, 5-Digit IDs & Dossier System
+9. Complete System Accounts, Profile Self-Service & User Administration
+10. Comprehensive REST API Endpoint Reference
+11. Security, Audit Diff Engine & Data Integrity Protections
+12. Database Schema Architecture (node:sqlite WAL Mode)
+13. Repository Folder Structure & Technical Stack
+14. Local Development, Seeding & Automated Verification
+15. Functional Sign Out & Landing Portal Redirectors Architecture
+16. Complete Enrolled Student Population (480 Students) & Demo Marks Dataset
+17. Dynamic Teacher-Defined Assessments, Multi-Test Instances & 100 Max Marks Policy
+18. Dedicated Read-Only School ID Manager & Photorealistic ID Badge Generation
+19. Directory Promotion Evaluation Engine & Automated Passing Threshold
+20. Dual-Mode Registration Workflow (New Intake vs. Returning Re-Enrollment)
+
+================================================================================
+1. INSTITUTIONAL IDENTITY & DESIGN SYSTEM
+================================================================================
+Lake Side Academy is a private educational institution operating in Ethiopia.
+The platform is engineered with zero placeholder mock data, authentic relational
+database integrity, and strict enterprise visual standards:
+
+• Official School Crest:
+  The emblem features an eagle clutching a globe above an open book of wisdom,
+  framed by bilingual typography (English: "LAKE SIDE ACADEMY", Amharic:
+  "ሌክ ሳይድ አካዳሚ").
+• Official Motto:
+  "Excellence in Knowledge, Integrity in Character"
+• Pure White Visual Philosophy (#FFFFFF):
+  In light mode, all content cards, surfaces, table containers, and the entrance
+  viewport use pure #FFFFFF background surfaces to maintain clinical visual
+  authority and eliminate dull greys.
+• Dark Mode Engine (Obsidian Architecture):
+  Tailored dark theme with deep navy/slate backgrounds (#080C1A, #0F172A),
+  subtle structural borders (#1E293B), and high-contrast typography (#F1F5F9).
+• Iconography:
+  Zero emojis across the platform. All iconography is rendered using clean,
+  vector-crisp Lucide React SVG components.
+• Full-Height Integrated Sidebar (100vh):
+  The top navigation bar is permanently removed after login. The full-height
+  sidebar contains the school crest, live Ethiopian date badge, quick search
+  (for authorized staff), categorized navigation links, user identity card,
+  theme switcher, home return, and logout actions.
+
+================================================================================
+2. STRICT ROLE-BASED ACCESS CONTROL (RBAC) & WORKSPACE CONFINEMENT
+================================================================================
+Every authenticated user is strictly confined to their authorized workspace.
+Unauthorized portals, tools, and endpoints are completely hidden from the UI
+and hard-blocked on the backend API with HTTP 403 Forbidden responses.
+
+Role Confinement Matrix:
+┌─────────────────────┬─────────────────┬──────────────────────┬───────────────┐
+│ Feature / Portal    │ Faculty Teacher │ Records / Directory  │ Admin Gateway │
+├─────────────────────┼─────────────────┼──────────────────────┼───────────────┤
+│ Teacher Workspace   │ ALLOWED (Only)  │ HIDDEN               │ ALLOWED       │
+│ Records Office      │ HIDDEN          │ ALLOWED (Only)       │ ALLOWED       │
+│ Director Portal     │ HIDDEN          │ ALLOWED (Only)       │ ALLOWED       │
+│ Admin Panel         │ HIDDEN          │ HIDDEN               │ ALLOWED (Only)│
+│ Audit Logs View     │ FORBIDDEN (403) │ FORBIDDEN (403)      │ ALLOWED (200) │
+│ Audit Stats API     │ FORBIDDEN (403) │ FORBIDDEN (403)      │ ALLOWED (200) │
+│ User Management     │ FORBIDDEN (403) │ FORBIDDEN (403)      │ ALLOWED (200) │
+│ School Settings     │ FORBIDDEN (403) │ FORBIDDEN (403)      │ ALLOWED (200) │
+│ Parent Directory    │ FORBIDDEN (403) │ ALLOWED (parents.view)│ ALLOWED      │
+│ Faculty Staff List  │ FORBIDDEN (403) │ ALLOWED (teachers.view)│ ALLOWED     │
+│ Quick Dossier Search│ HIDDEN          │ ALLOWED              │ ALLOWED       │
+│ Unassigned Classes  │ FORBIDDEN (403) │ ALLOWED              │ ALLOWED       │
+│ Student Registration│ FORBIDDEN (403) │ ALLOWED (students.create)│ ALLOWED   │
+│ Mark Entry          │ Assigned Only   │ Supervised Edit      │ Full Authority│
+│ Adjust Marks (Audit)│ Assigned Only   │ Supervised Edit      │ Full Authority│
+│ Send Class SMS      │ Assigned Only   │ Whole School / Grade │ Full Authority│
+└─────────────────────┴─────────────────┴──────────────────────┴───────────────┘
+
+================================================================================
+3. FACULTY TEACHER WORKSPACE, ACCOUNT SETTINGS & PRIVACY SAFEGUARDS
+================================================================================
+The Teacher Workspace is purpose-built for classroom instruction and continuous
+assessment. It isolates faculty from administrative data and preserves student
+confidentiality:
+
+• Landing Page Confinement:
+  When logged in as a teacher, the Director Portal and Records Office cards
+  are completely hidden from view. Only the Teacher Workspace card is rendered.
+• Sidebar Sanitization:
+  - Quick Search (5-digit student dossier lookup) is hidden from the teacher
+    sidebar to prevent unauthorized browsing of unassigned student files.
+  - Sidebar contains the 7 essential teaching views:
+    1. Dashboard: Welcome overview, active section counts, quick links.
+    2. My Classes: Roster of students strictly in assigned sections.
+    3. Mark Entry: Spreadsheet-like assessment scoring for assigned subjects.
+    4. Adjustments: Audited mark modifications with mandatory reason logging.
+    5. Rankings: Section rankings scoped to the teacher's assigned classes.
+    6. SMS to Parents: Targeted messaging to parents of assigned students.
+    7. Account Settings: Self-service credential & profile updates.
+• Teacher Account Settings & Self-Service:
+  - Teachers can edit their own login credentials: username, password, email,
+    and phone directly via the Account Settings interface.
+  - Changing password requires cryptographic verification of the current password
+    via bcrypt.compareSync.
+  - Updating username immediately re-issues a signed JWT token and updates
+    the active session smoothly without forcing unexpected re-logins.
+• Backend Hard Barriers:
+  - GET /api/audit/logs: Blocked with HTTP 403 Forbidden.
+  - GET /api/audit/stats: Blocked with HTTP 403 Forbidden.
+  - GET /api/parents: Blocked with HTTP 403 Forbidden.
+  - GET /api/teachers: Blocked with HTTP 403 Forbidden.
+  - GET /api/users: Blocked with HTTP 403 Forbidden.
+  - GET /api/students: Automatically scoped to assigned classes and sections.
+  - GET /api/students/:id: If student is outside assigned classes, blocked with
+    HTTP 403 Forbidden. For assigned students, audit_history is returned as an
+    empty array [] to conceal institutional audit logs.
+  - GET /api/search/global: Returns only students enrolled in assigned classes;
+    returns empty lists for teachers and parents.
+
+================================================================================
+4. ACADEMIC STRUCTURE, DYNAMIC SECTION MANAGEMENT & CURRICULUM SUBJECT MATRIX
+================================================================================
+Lake Side Academy operates an 11-level academic tier spanning Kindergarten
+through Grade 8 with flexible, dynamic section management:
+
+• Class Levels (11 Classes):
+  - Kindergarten: KG 1, KG 2, KG 3
+  - Primary Cycle 1: Grade 1, Grade 2, Grade 3, Grade 4
+  - Primary Cycle 2: Grade 5, Grade 6, Grade 7, Grade 8
+
+• Baseline Standardized Sections (32 Total Active Default Sections):
+  - Purged Sections D and E across all grades and kindergarten levels.
+  - Standard Baseline: Classes default to 3 sections: Section A, Section B, Section C.
+  - Grade 5 Exception: Section C is removed from Grade 5; Grade 5 strictly has
+    only Section A and Section B (2 sections).
+  - Breakdown:
+    * KG 1 - KG 3: Sections A, B, C (3 sections each = 9)
+    * Grade 1 - Grade 4: Sections A, B, C (3 sections each = 12)
+    * Grade 5: Sections A, B (2 sections = 2)
+    * Grade 6 - Grade 8: Sections A, B, C (3 sections each = 9)
+    * Total Baseline: 32 sections.
+
+• Dynamic Section Addition & Deletion Controls:
+  - Executive Administrator and Directory staff can dynamically add sections
+    to any class (e.g., adding Section D to Grade 8, so only Grade 8 has D,
+    while other classes remain A - C).
+  - Sections can be deleted dynamically via DELETE /api/academic/sections/:id.
+  - Deletion Safeguard: A section can only be deleted if it has 0 enrolled students.
+    Attempting to delete a section with active student assignments is rejected
+    with HTTP 400 Bad Request to maintain relational integrity.
+
+• Official Curriculum Subjects & Official Codes:
+  Curriculum subjects are permanently badged and sorted by official code:
+  - [MATH] Mathematics
+  - [ENG]  English Language
+  - [AMH]  Amharic Language
+  - [SCI]  General Science
+  - [SOC]  Social Studies
+  - [ENV]  Environmental Science
+  - [ICT]  Information & Communication Technology
+  - [CIT]  Citizenship Education
+  - [HPE]  Health & Physical Education
+  - [PVA]  Performing & Visual Arts
+
+• Subject Distribution per Academic Cycle:
+  - Kindergarten (KG 1 - KG 3):
+    [MATH], [ENG], [AMH], [HPE], [PVA]
+  - Primary Cycle 1 (Grades 1 - 4):
+    [MATH], [ENG], [AMH], [ENV], [HPE], [PVA]
+  - Primary Cycle 2 (Grades 5 - 8):
+    [MATH], [ENG], [AMH], [SCI], [SOC], [CIT], [ICT], [HPE], [PVA]
+
+• Class & Grade Filter Scopes:
+  - "All Classes & Grades (KG 1 - Grade 8)"
+  - "All Kindergarten (KG 1 - KG 3)" (parameter: class_id=ALL_KG)
+  - "All Primary Grades (Grade 1 - Grade 8)" (parameter: class_id=ALL_PRIMARY)
+  - Individual Class & Section selection
+
+================================================================================
+5. ETHIOPIAN CALENDAR (E.C.) ENGINE & SESSION ARCHITECTURE
+================================================================================
+The platform runs natively on the Ethiopian Calendar (ዓመተ ምሕረት / E.C.)
+operating in the Africa/Addis_Ababa timezone:
+
+• Current Active Academic Year:
+  2018 E.C. (Active Session).
+  The redundant year dropdown selector has been replaced by a static status badge:
+  "Academic Year: 2018 E.C. (Active)".
+• Historical Sessions:
+  2017 E.C., 2016 E.C., 2015 E.C. stored relationally to preserve past academic
+  performance and multi-year dossiers.
+• Date Input Architecture:
+  Direct-typing DD/MM/YYYY text input fields validated against the Ethiopian
+  civil solar calendar. Native browser date pickers (which force Gregorian dates)
+  are completely bypassed.
+
+================================================================================
+6. CONTINUOUS ASSESSMENT & RANKING ENGINE
+================================================================================
+• Assessment Benchmarks (Term Dropdown Removed):
+  The system uses direct Assessment Benchmarks rather than redundant term selects:
+  - "ALL" (Full cumulative year / semester average)
+  - "Mid" (Midterm Assessment)
+  - "Final" (Final Examination)
+  - "Tests" (Continuous Classroom Tests)
+  - Shorthand Prefixes:
+    "F." represents First Semester (e.g., F.Mid, F.Final, F.Tests)
+    "S." represents Second Semester (e.g., S.Mid, S.Final, S.Tests)
+  The backend automatically resolves benchmark prefixes to the correct semester.
+
+• Ranking Engine Rules:
+  - Algorithm: Standard Competition Ranking (1224 tie formula).
+  - Medals:
+    Rank 1: 🥇 Gold Medal & Bold typography
+    Rank 2: 🥈 Silver Medal & Bold typography
+    Rank 3: 🥉 Bronze Medal & Bold typography
+  - Top 10 Leaderboard: Special highlighted styling with a minimum 50 score
+    qualifying threshold (students with 0 or unentered marks are excluded).
+  - Empty State: If no students are ranked, renders "No rankings available".
+  - Scope Options:
+    * Primary Cycle 1 (Grades 1 - 4)
+    * Primary Cycle 2 (Grades 5 - 8)
+    * Grade 1 - 8 (All Primary School)
+    * Single Section / Class
+
+================================================================================
+7. CLASS & PARENT SMS BROADCAST (WHOLE SECTION & INDIVIDUAL STUDENT TARGETING)
+================================================================================
+• SMS Gateway Integration:
+  Integrated directly with SMSEthiopia API v2.
+  - Sender ID: LAKESIDE
+  - Supports live dispatch to real Ethiopian mobile numbers (+251 9X XXX XXXX).
+• Selected UI Buttons High-Contrast Overhaul:
+  In TeacherSMSPage and Admin SMS Broadcast, selected class buttons render with
+  vibrant high-contrast states in both dark and light modes:
+  - Dark Mode: Glowing purple accent tint (rgba(124, 58, 237, 0.28)) with
+    crisp #A78BFA solid border, active bullet indicator, and bold white text.
+  - Light Mode: Clean lavender surface (#EDE9FE) with vibrant violet border
+    (#7C3AED) and deep purple text (#4C1D95).
+  - Eliminates washed-out white-on-white text issues permanently.
+• Two Recipient Targeting Modes for Teachers:
+  1. Whole Section:
+     Dispatches SMS notice to all enrolled students' parents across selected sections.
+  2. Select Specific Students:
+     Allows faculty to select exact individual students or subgroups within their
+     assigned classes:
+     - Real-Time Search: Instant character-by-character search by student name letters
+       or 5-digit Student ID.
+     - Select All / Clear All: One-click batch selection and de-selection.
+     - Student Cards: Interactive cards showing student name, 5-digit ID, class
+       section badge, and parent phone number.
+     - Live Recipient Metrics: Instant calculation of matching students, selected
+       students, and deduplicated parent recipients.
+• Backend Multi-Student Targeting Support:
+  Both POST /api/sms/broadcast and POST /api/sms/calculate-recipients natively
+  support target_type: 'STUDENT' with student_ids: [10001, 10002, ...].
+• Phone Deduplication:
+  When broadcasting to a class or school where a parent has multiple enrolled
+  children, the system deduplicates phone numbers to prevent redundant messages.
+• Tokenized Result SMS Generator:
+  Auto-generates student assessment reports directly from the SQLite database:
+  "Lake Side Academy Result: Hana Alemu (10001) | Math: 88, Eng: 92 | Total: 180 | Rank: 2nd"
+  Can be dispatched directly with an Assessment Benchmark without requiring term_id.
+• Real-time Parent SMS Simulator:
+  Interactive simulated mobile phone interface for instant verification of
+  dispatched SMS broadcasts, delivery receipts, and parent message logs.
+
+================================================================================
+8. STUDENT REGISTRATION, 5-DIGIT IDS & DOSSIER SYSTEM
+================================================================================
+• Immutable 5-Digit Student ID:
+  Unique 5-digit number (10001+) assigned sequentially at registration and
+  immutable across the student's entire tenure at Lake Side Academy.
+• Multi-Child Parent Linking:
+  Same parent phone number can be linked to multiple children (e.g., siblings),
+  while preventing accidental duplicate student registration with the same name
+  and parent contact.
+• 7-Tab Student Dossier:
+  1. Overview: Bio, 5-digit ID, class, section, roll number, status.
+  2. Parents & Guardians: Primary and secondary contacts, phone, occupation.
+  3. Academic Results: Current year breakdown by subject, assessment, and scores.
+  4. Academic Summary: Cumulative total points, maximum points, and percentage.
+  5. Multi-Year Academic History: Historical grades and section records.
+  6. SMS Communication Log: Chronological history of all messages sent to parents.
+  7. Security Audit Trail: Complete data modification diffs (Admin only).
+• Grade Promotion Wizard:
+  Promotes students to the subsequent grade level (e.g., Grade 7B -> Grade 8A)
+  while permanently preserving previous academic year records in student_history.
+
+================================================================================
+9. COMPLETE SYSTEM ACCOUNTS, PROFILE SELF-SERVICE & USER ADMINISTRATION
+================================================================================
+┌─────────────────────┬──────────────┬────────────┬─────────────────────────────┐
+│ Role / Workspace    │ Username     │ Password   │ Name & Assigned Scope       │
+├─────────────────────┼──────────────┼────────────┼─────────────────────────────┤
+│ Faculty Teacher     │ abebe        │ teach123   │ Mr. Abebe Kebede (T-101)    │
+│                     │              │            │ Math (Grade 7 & 8, A, B, C) │
+├─────────────────────┼──────────────┼────────────┼─────────────────────────────┤
+│ Executive Admin     │ admin        │ age1324    │ Lakeside Executive Admin    │
+│ (Admin Gateway)     │              │            │ Sovereign System Control    │
+├─────────────────────┼──────────────┼────────────┼─────────────────────────────┤
+│ Registrar / Records │ registrar    │ dir123     │ Sister Martha (Registrar)   │
+│ (Records Office)    │              │            │ Student & Parent Records    │
+├─────────────────────┼──────────────┼────────────┼─────────────────────────────┤
+│ Managing Director   │ director1    │ dir123     │ Director 1 (Operations)    │
+│ (Director Portal)   │              │            │ Institutional Governance    │
+├─────────────────────┼──────────────┼────────────┼─────────────────────────────┤
+│ Academic Director   │ director2    │ dir123     │ Director 2 (Academics)     │
+│ (Director Portal)   │              │            │ Curriculum & Grade Audits   │
+└─────────────────────┴──────────────┴────────────┴─────────────────────────────┘
+
+• Faculty Profile Self-Service:
+  Teachers can edit their own login credentials: username, password (verified
+  against current password), email, and phone via PUT /api/auth/profile.
+• Admin User Administration & Direct Password Reset:
+  Executive Administrator can inspect all accounts, edit full names, usernames,
+  roles, emails, phones, and reset any user's password directly via PUT /api/users/:id
+  without needing to know the user's previous password.
+
+================================================================================
+10. COMPREHENSIVE REST API ENDPOINT REFERENCE
+================================================================================
+Authentication & Profile:
+  POST   /api/auth/login              - Authenticate user, issue JWT token & profile
+  GET    /api/auth/me                 - Return authenticated user session & permissions
+  PUT    /api/auth/profile            - Self-service update username, password, email, phone
+  POST   /api/auth/logout             - Terminate session and record audit event
+
+User Administration (Admin Only):
+  GET    /api/users                   - List all institutional user accounts
+  POST   /api/users                   - Create new staff / user account
+  PUT    /api/users/:id               - Edit user profile & reset password directly
+  DELETE /api/users/:id               - Deactivate user account
+
+Academic Structures & Promotion:
+  GET    /api/academic/promotion-evaluations - Compute student cumulative overall averages & status (Promoted vs. Retained) against passing threshold
+  Academic Structures:
+  GET    /api/academic/years          - List all academic years (2018 E.C. active)
+  GET    /api/academic/terms          - List academic terms / semesters
+  GET    /api/academic/classes        - List classes with nested sections & subjects
+  POST   /api/academic/classes        - Create new class (Admin & Directory)
+  POST   /api/academic/sections       - Create new section (Admin & Directory)
+  DELETE /api/academic/sections/:id   - Delete empty section (Admin & Directory; 0 students guard)
+  GET    /api/academic/subjects       - List curriculum library subjects
+  POST   /api/academic/subjects       - Add subject to library (Admin & Directory)
+  PUT    /api/academic/subjects/:id   - Edit subject code/name (Admin & Directory)
+  DELETE /api/academic/subjects/:id   - Delete subject from library
+  POST   /api/academic/classes/:id/subjects - Assign subject to class
+  DELETE /api/academic/classes/:cid/subjects/:sid - Remove subject from class
+
+Teachers & Faculty:
+  GET    /api/teachers                - List faculty (Admin & Directory; teachers.view)
+  POST   /api/teachers                - Create teacher account (Admin only)
+  GET    /api/teachers/my-assignments - Get assigned classes/sections (Teacher)
+  POST   /api/teachers/assignments    - Map teacher to class/section/subject (Admin)
+  DELETE /api/teachers/assignments/:id - Remove teacher assignment (Admin)
+
+Students & Records:
+  GET    /api/students                - List students (scoped for teachers)
+  POST   /api/students                - Register new student (Admin & Directory)
+  POST   /api/students/existing       - Register existing student preserving records
+  GET    /api/students/search-returning - Search existing students by Name, 5-digit ID, or Parent Phone
+  POST   /api/students/re-enroll      - Re-enroll returning student into target year/class preserving 5-digit ID
+  GET    /api/students/next-id        - Preview next 5-digit Student ID
+  GET    /api/students/:id            - Full 7-tab student dossier (scoped for teachers)
+  PUT    /api/students/:id            - Update student profile (Admin & Directory)
+  POST   /api/students/:id/promote    - Promote student to next grade
+  GET    /api/search/students         - Filtered student search with debouncing
+  GET    /api/search/global           - Quick search (scoped strictly for teachers)
+
+Parents:
+  GET    /api/parents                 - List parents (Admin & Directory; parents.view)
+  POST   /api/parents                 - Create parent record (Admin & Directory)
+  PUT    /api/parents/:id             - Update parent phone/contact details
+
+Assessments & Marks:
+  GET    /api/assessments/subject-summary - Get assessment breakdown, configured points, and remaining quota out of 100 max
+  GET    /api/assessments             - List assessments (scoped for teachers)
+  POST   /api/assessments             - Create assessment (Admin, Directory, Teacher)
+  GET    /api/marks                   - Marksheet for assessment (scoped for teachers)
+  POST   /api/marks/batch             - Batch save marks (scoped for teachers)
+  PUT    /api/marks/:id/adjust        - Audited mark modification with mandatory reason
+
+Rankings:
+  GET    /api/rankings                - Compute 1224 rankings with benchmarks
+
+SMS & Communications:
+  GET    /api/sms/broadcasts          - List SMS broadcast history
+  POST   /api/sms/broadcast           - Dispatch targeted broadcast (class, whole-school, or student list)
+  POST   /api/sms/result-broadcast    - Generate & dispatch Result SMS to parents
+  GET    /api/sms/calculator          - Compute deduplicated recipient audience (supports student_ids)
+  GET    /api/sms/simulator/feed      - Real-time simulated parent phone feed
+  GET    /api/sms/simulator/parents   - List parents with simulated SMS activity
+  POST   /api/sms/retry/:id           - Retry failed SMS recipient
+
+Audit & Security:
+  GET    /api/audit/logs              - System security & modification logs (Admin only)
+  GET    /api/audit/stats             - System telemetry & operational stats (Admin only)
+
+School Settings:
+  GET    /api/settings                - School configuration & SMS credentials
+  PUT    /api/settings                - Update configuration (Admin only)
+
+================================================================================
+11. SECURITY, AUDIT DIFF ENGINE & DATA INTEGRITY PROTECTIONS
+================================================================================
+• SQL Injection Prevention:
+  100% of database interactions execute through parameterised prepared statements
+  via node:sqlite DatabaseSync.
+• Password Encryption:
+  Passwords securely hashed using bcryptjs with 10 salt rounds.
+• Security Audit Diff Engine:
+  All state mutations (student registration, mark adjustments, settings updates,
+  role changes) trigger automatic audit records logging old values, new values,
+  user ID, IP address, and timestamp.
+• Mark Modification Integrity:
+  Direct overwriting of student scores is blocked. Modifications require an
+  explicit justification string recorded in mark_history.
+• Secret Admin Entrance:
+  The admin portal is decoupled from public view and accessible exclusively via
+  direct URL (/admin or /admin/login).
+• Demo Backdoor Elimination:
+  Demo credentials boxes and the /api/auth/demo-switch endpoint are disabled.
+
+================================================================================
+12. DATABASE SCHEMA ARCHITECTURE (node:sqlite WAL MODE)
+================================================================================
+The relational engine is powered by Node's built-in SQLite engine with WAL mode:
+- PRAGMA journal_mode = WAL; (High concurrency, zero lockups)
+- PRAGMA foreign_keys = ON; (Strict relational cascading & constraints)
+
+Core Tables:
+  1. school_settings             - Key-value institutional configuration
+  2. permissions                 - Granular permission definitions catalog
+  3. users                       - System user accounts (Admin, Directory, Teacher)
+  4. user_permissions            - User-to-permission grant bindings
+  5. academic_years              - Multi-year Ethiopian Calendar tracking
+  6. terms                       - First, Second, and Average Semesters
+  7. classes                     - KG 1 to Grade 8 definitions
+  8. sections                    - Standardized sections (A, B, C, D, E per class)
+  9. subjects                    - Curriculum subjects library with official codes
+  10. class_subjects             - Class-to-subject curriculum assignments
+  11. teachers                   - Teacher faculty profiles and staff IDs
+  12. teacher_assignments        - Teacher-to-class/section/subject mappings
+  13. students                   - Core student records with 5-digit unique IDs
+  14. student_class_assignments  - Active and historical student enrollments
+  15. parents                    - Parent and guardian contact directory
+  16. student_parents            - Student-to-parent relational bindings
+  17. assessments                - Tests, midterms, and final exam records
+  18. marks                      - Student scores per assessment
+  19. mark_history               - Audited score adjustments with justification
+  20. student_history            - Historical academic and grade records
+  21. sms_broadcasts             - SMS broadcast campaigns
+  22. sms_recipients             - Individual SMS message delivery tracking
+  23. announcements              - Notice board announcements
+  24. audit_logs                 - Security and data mutation audit trail
+
+================================================================================
+13. REPOSITORY FOLDER STRUCTURE & TECHNICAL STACK
+================================================================================
+Lakeside/
+├── server/
+│   ├── package.json
+│   └── src/
+│       ├── config/              # Constants, JWT Secret, DB path
+│       ├── db/
+│       │   ├── schema.sql       # 24 relational tables with constraints
+│       │   ├── database.js      # node:sqlite DatabaseSync wrapper with WAL
+│       │   └── seed.js          # Clean production foundation seeder
+│       ├── middleware/
+│       │   ├── auth.js          # JWT authentication middleware
+│       │   ├── rbac.js          # Role & teacher scoping verification
+│       │   └── audit.js         # Interceptor for automatic audit logging
+│       ├── routes/              # Modular Express REST route handlers
+│       ├── utils/               # Student ID generator, Ethiopian Calendar
+│       └── index.js             # API server entry point (:3001)
+├── client/
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── index.html               # Crest logo favicon & typography
+│   ├── public/                  # Static assets (logo.png, favicon.png)
+│   └── src/
+│       ├── components/          # Sidebar, Navbar, Badges, Modals
+│       ├── context/             # AuthContext, ThemeContext, NotificationContext
+│       ├── pages/
+│       │   ├── Landing/         # Public institutional entrance
+│       │   ├── Login/           # Authentication gateway
+│       │   ├── Admin/           # Admin Panel (Dashboard, Users, Academics, SMS)
+│       │   ├── Directory/       # Records Office (Student List, Search, Dossier)
+│       │   ├── Teacher/         # Teacher Workspace (Gradebook, Marks, SMS)
+│       │   └── ParentSMS/       # Simulated Parent SMS Mobile Device
+│       ├── styles/              # Vanilla CSS design system (index.css)
+│       ├── services/            # API client service (api.js)
+│       └── App.jsx              # Role containment router & layouts
+├── tests/
+│   ├── run-all-tests.js         # Integration test suite
+│   └── test-academic-subjects.js# Academic curriculum verification suite
+├── dev-runner.js                # Full-stack concurrency launcher
+├── ABOUT.txt                    # System manual and changelog
+└── all.txt                      # Complete architectural and feature specification
+
+================================================================================
+14. LOCAL DEVELOPMENT, SEEDING & AUTOMATED VERIFICATION
+================================================================================
+Prerequisites:
+  • Node.js v22.5+ or v24+
+  • npm v10+
+
+1. Install Dependencies:
+   npm run install:all
+
+2. Seed Clean Production Foundation:
+   npm run seed
+
+3. Launch Concurrent Development Stack:
+   node dev-runner.js
+   - API Server:  http://localhost:3001
+   - Client App:  http://localhost:5173
+
+4. Run Automated Verification Tests:
+   node tests/test-academic-subjects.js
+
+5. Verified Role Access Control:
+   - Teacher login (abebe / teach123):
+     * Can access: /api/teachers/my-assignments (HTTP 200)
+     * Blocked from: /api/audit/logs (HTTP 403)
+     * Blocked from: /api/audit/stats (HTTP 403)
+     * Blocked from: /api/parents (HTTP 403)
+     * Blocked from: /api/teachers (HTTP 403)
+     * Blocked from: /api/users (HTTP 403)
+   - Admin login (admin / age1324):
+     * Can access all administrative endpoints (HTTP 200)
+   - Directory login (registrar / dir123):
+     * Can access: /api/parents, /api/students, /api/search (HTTP 200)
+     * Blocked from: /api/audit/logs (HTTP 403)
+
+================================================================================
+15. FUNCTIONAL SIGN OUT & LANDING PORTAL REDIRECTORS ARCHITECTURE
+================================================================================
+• Full-Lifecycle Functional Sign Out:
+  - Sidebar Sign Out button invokes AuthContext.logout(), which wipes JWT tokens
+    from storage, terminates the server session audit log, and clears reactive
+    user state.
+  - In App.jsx, the portal synchronization effect immediately detects !user and
+    resets activePortal to 'landing' while resetting all sub-tabs to default.
+  - Resolves edge cases where an unauthenticated or stale portal layout remained
+    rendered after signing out.
+
+• Landing Page Direct Portal Gateways:
+  The public institutional landing page features dedicated, interactive entrance
+  cards for school operations:
+  1. Teacher Workspace (Faculty & Academics):
+     Direct route to /login with targetPortal: 'teacher'.
+  2. Records Office (Registrar & Enrollment):
+     Direct route to /login with targetPortal: 'records'.
+  3. Director Portal (Executive Leadership):
+     Direct route to /login with targetPortal: 'directory'.
+  4. Sovereign Admin Gateway (Institutional Sovereignty):
+     Direct route to /admin or /admin/login.
+
+• Visual Quality & Hover Lift Aesthetics:
+  - Cards are styled with high-contrast surfaces, glowing hover shadows,
+    subtle border highlights, and crisp Lucide React icons.
+  - When signed in, clicking any authorized portal card opens that workspace directly.
+  - When signed out, clicking any portal card opens the login modal with a
+    contextual badge specifying the destination workspace.
+
+================================================================================
+16. COMPLETE ENROLLED STUDENT POPULATION (480 STUDENTS) & DEMO MARKS DATASET
+================================================================================
+• Section Enrollment Distribution (15 Students per Section):
+  Lake Side Academy operates 11 distinct classes with 32 active class sections:
+  ┌───────────────┬──────────────────────────┬──────────────┬──────────────────┐
+  │ Class Cycle   │ Classes Included         │ Sections     │ Enrolled Students│
+  ├───────────────┼──────────────────────────┼──────────────┼──────────────────┤
+  │ Kindergarten  │ KG 1, KG 2, KG 3         │ A, B, C (9)  │ 135 (9 x 15)     │
+  │ Lower Primary │ Grades 1, 2, 3, 4        │ A, B, C (12) │ 180 (12 x 15)    │
+  │ Middle School │ Grade 5 (Special % Rule) │ A, B (2)     │  30 (2 x 15)     │
+  │ Upper Primary │ Grades 6, 7, 8           │ A, B, C (9)  │ 135 (9 x 15)     │
+  ├───────────────┼──────────────────────────┼──────────────┼──────────────────┤
+  │ TOTALS        │ 11 Classes               │ 32 Sections  │ 480 Students     │
+  └───────────────┴──────────────────────────┴──────────────┴──────────────────┘
+
+• Student Profiles & Demographic Fidelity:
+  - Student IDs: Unique 5-digit sequential numbers from 10001 to 10480.
+  - Authentic Ethiopian Names: Culturally accurate three-tier naming
+    (First Name + Father's Name + Grandfather's Name) with balanced gender ratios.
+  - Ethiopian Calendar Birth Dates: Geared specifically to grade levels in Ethiopian
+    civil calendar (e.g. 2014 E.C. for KG 1 down to 2004 E.C. for Grade 8).
+  - Roll Numbers: Exactly 1 through 15 in each section.
+  - Parent & Guardian Data: 480 distinct parent records with active Ethiopian mobile
+    numbers (+251 91 X), realistic occupations (Engineers, Merchants, Physicians,
+    Lecturers, Accountants), and primary contact linkages.
+
+• First Semester 2018 E.C. Comprehensive Assessments & Marks:
+  - Assessments Matrix (357 Total Assessments):
+    * Tests (Max 20 marks, 20% weight) across curriculum subjects.
+    * Midterm Exam (Max 30 marks, 30% weight) across curriculum subjects.
+    * Final Exam (Max 50 marks, 50% weight) across curriculum subjects.
+  - Entered Student Marks (5,355 Total Individual Mark Records):
+    * Realistic performance curves per student roll number:
+      - Roll 1 & 2: Honors achievers (~96%) testing Olympic tie-breaker ('1 A', '1 B').
+      - Roll 3: High achiever (~91%).
+      - Roll 4-9: Solid proficient tier (70% - 86%).
+      - Roll 10-13: Average performers (57% - 68%).
+      - Roll 14: Passing threshold (52%).
+      - Roll 15: Needs support (<50 marks threshold, testing unranked handling).
+  - Faculty Audit Attribution:
+    * Mathematics assessments and marks for Grade 7 (A, B, C) and Grade 8 (A, B, C)
+      are recorded under Mr. Abebe Kebede's faculty credentials.
+    * All mark adjustments require mandatory justification and create audited diffs.
+
+• Live SMS Simulator Gateway:
+  - Pre-seeded with initial institutional announcement broadcasts and recipient logs.
+  - Live Parent Simulator Feed immediately accessible for testing parent notifications.
+
+================================================================================
+17. DYNAMIC TEACHER-DEFINED ASSESSMENTS, MULTI-TEST INSTANCES & 100 MAX MARKS
+================================================================================
+• Unconstrained Multi-Instance Testing:
+  Teachers are no longer restricted to a single fixed test per term.
+  - Faculty can create and schedule tests multiple times throughout the term
+    (e.g., Test 1, Test 2, Quiz 1, Pop Quiz, Midterm Exam, Final Exam, Bonus).
+  - Assessment Types Supported:
+    * 'Test'   : Standard classroom quizzes, chapter tests, unit exams.
+    * 'Mid'    : Midterm examinations.
+    * 'Final'  : Comprehensive end-of-term semester examinations.
+    * 'Bonus'  : Extra credit and achievement incentives per subject.
+    * 'Custom' : Specialized project work, laboratory evaluations, oral presentations.
+
+• Strict 100 Maximum Total Marks Policy:
+  - The sum of max marks across all assessments for any given subject, section,
+    and term cannot exceed 100 points:
+      SUM(max_marks) <= 100.0
+  - Live Subject Points Summary API:
+    GET /api/assessments/subject-summary?class_id=X&section_id=Y&subject_id=Z&term_id=W
+    Returns:
+    {
+      total_max_marks: 80.0,
+      remaining_points: 20.0,
+      assessments: [
+        { id: 1, name: 'Test 1', assessment_type: 'Test', max_marks: 20 },
+        { id: 2, name: 'Midterm', assessment_type: 'Mid', max_marks: 30 },
+        { id: 3, name: 'Bonus 1', assessment_type: 'Bonus', max_marks: 5 }
+      ]
+    }
+  - Server-Side Enforcement:
+    POST /api/assessments validates that (current_total + new_max_marks) <= 100.
+    If the limit is exceeded, the server rejects creation with HTTP 400 Bad Request:
+    "Cannot create assessment: Total max marks for this subject would exceed 100 points."
+
+• Teacher Mark Entry UI & Real-Time Progress Bar:
+  - MarkEntryPage displays a real-time points allocation progress bar:
+    * Total Points Configured / 100
+    * Points Available to Allocate (Remaining Quota)
+    * Clickable assessment selector chips with badge indicators ('Bonus', 'Test', etc.)
+    * "Add Dynamic Assessment" modal with remaining points validation and warning.
+  - Authentic Amharic Save Action:
+    Primary save button maintains authentic Ethiopian educational terminology:
+    'አስተካክል' (Adjust / Record).
+
+================================================================================
+18. DEDICATED READ-ONLY SCHOOL ID MANAGER & PHOTOREALISTIC ID BADGE GENERATION
+================================================================================
+• Purpose-Built Identity Verification Portal:
+  A dedicated portal page (/id-lookup, "School ID Manager") created for badge
+  printing, registrar identity verification, and directory administration.
+  
+• Zero Marks & Zero Edit Guarantee:
+  - Strictly read-only directory view.
+  - Completely hides marks, grades, test scores, ranking details, and financial logs.
+  - Zero editing actions or input fields to guarantee zero accidental record mutation.
+
+• Fast Multi-Criteria Lookup:
+  - Search by permanent 5-digit Student ID (e.g., '10001').
+  - Search by student full name substring (e.g., 'Hana Alemu').
+  - Filter by Grade Level (KG 1 through Grade 8) and Class Section (A through E).
+  - Live demographic gender counters: Total Students, Female count ('F' #DB2777),
+    Male count ('M' #2563EB).
+
+• Photorealistic Printable Student ID Card Modal:
+  - Generates an official, print-ready Lake Side Academy Student Identification Card:
+    * Institutional bilingual header: "LAKE SIDE ACADEMY | ሌክ ሳይድ አካዳሚ"
+    * High-resolution official eagle & globe crest
+    * Student photo placeholder / profile avatar frame
+    * Large, clear 5-digit Student ID in monospace typography (e.g. #10001)
+    * Student Full Name & Gender ('M' / 'F')
+    * Ethiopian Calendar Date of Birth (DD/MM/YYYY)
+    * Academic Placement: Grade Level and Class Section
+    * Parent / Emergency Guardian Name and Contact Phone
+    * Scannable QR Code verification placeholder
+    * Authorized Registrar Signature & Official School Stamp seal block
+    * Quick "Print ID Badge" action triggering clean, print-optimized media CSS.
+
+================================================================================
+19. DIRECTORY PROMOTION EVALUATION ENGINE & AUTOMATED PASSING THRESHOLD
+================================================================================
+• Director / Registrar Promotion Threshold Configuration:
+  - Minimum passing promotion average cutoff is configurable in real time.
+  - Persisted in 'school_settings' under key 'promotion_min_average' (Default: 50.0%).
+  - Quick-select preset buttons in UI: 50%, 55%, 60%, 65%, 70%.
+  - "Save As Default" button persists the selected threshold as the permanent policy.
+
+• Automated Cumulative Performance Engine:
+  - Endpoint: GET /api/academic/promotion-evaluations
+  - Aggregates all marks scored by each student across all subjects in the academic year:
+    * Cumulative Total Marks Obtained
+    * Cumulative Total Maximum Points
+    * Cumulative Overall Percentage Average: (total_obtained / total_max) * 100
+  - Automated Status Decisioning:
+    * If overall_average >= min_passing_average: Status = 'Promoted' (Emerald Badge)
+    * If overall_average < min_passing_average: Status = 'Retained' (Amber Badge)
+    * If no marks recorded: Status = 'Pending Evaluation' (Neutral Slate Badge)
+
+• Class-Level Executive Summary KPIs:
+  - Total Enrolled Students
+  - Promoted Count & Percentage Rate (e.g. 93.3% Promoted)
+  - Retained Count & Percentage Rate
+  - Class-Wide Cumulative Average Benchmark
+
+• Student Complete Details Modal:
+  - Complete subject-by-subject score breakdown table:
+    * Subject Name & Code
+    * Marks Obtained / Max Marks
+    * Subject Percentage
+    * Subject Pass / Fail Status (Individual subject 50% cutoff)
+  - One-Click Next Grade Advancement Form:
+    * Pre-selects recommended next grade level (e.g. Grade 7 -> Grade 8)
+    * Select target section and target academic year
+    * Executes official re-enrollment preserving historical dossier.
+
+================================================================================
+20. DUAL-MODE REGISTRATION WORKFLOW (NEW INTAKE VS. RETURNING RE-ENROLLMENT)
+================================================================================
+• Dual-Mode Workflow Switcher:
+  The Student Registration interface (/registration) features a top toggle:
+  1. [ 🌟 New Student Intake (Assign New 5-Digit ID) ]
+  2. [ 🔄 Returning / Old Student Enrollment (Next Year) ]
+
+• Returning / Old Student Enrollment Workflow:
+  Designed specifically for registering existing students for the next academic year
+  without creating duplicate student profiles:
+  - Search Criteria:
+    * Student Full Name
+    * 5-Digit Student ID (e.g. '10001')
+    * Parent / Guardian Phone Number (e.g. '0911234567')
+  - Instant Candidate Selection:
+    * Returns matching student cards with previous grade placement, section,
+      parent phone, and permanent 5-digit ID.
+    * Registrar clicks "[ Select & Continue ]".
+  - Locked Identity & Target Advancement Placement:
+    * Student's permanent 5-digit ID is permanently locked with security padlock.
+    * Target Academic Year selection (e.g. 2019 E.C. or active year).
+    * Target Grade Level selection (auto-suggests next logical grade).
+    * Target Class Section selection (displays current enrollment counts).
+    * Guardian contact verification and optional phone update for SMS delivery.
+  - Immutable ID Preservation & Audit Trail:
+    * Calls POST /api/students/re-enroll.
+    * Creates an active record in 'student_class_assignments'.
+    * Preserves existing marks, academic dossier, and permanent 5-digit ID.
+    * Logs 'RE_ENROLLMENT' entry into 'student_history' table with previous and new data.
+    * Records security audit log entry 'RE_ENROLL_STUDENT'.
+  - Confirmation Card:
+    * Displays green checkmark badge: "RETURNING STUDENT RE-ENROLLED".
+    * Shows permanent 5-digit ID, full name, gender ('M'/'F'), and assigned section.
+    * Quick actions to view updated student profile or enroll another student.
+
+================================================================================
+END OF MASTER ARCHITECTURAL MANUAL (all.txt)
+================================================================================
+

@@ -1,0 +1,634 @@
+================================================================================
+LAKE SIDE ACADEMY | ሌክ ሳይድ አካዳሚ - ARCHITECTURE & SYSTEM MANUAL
+================================================================================
+
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+Lake Side Academy Management System is a production-grade, executive-tier
+educational administration platform engineered for real school operations.
+
+The platform embodies the official crest of Lake Side Academy (an eagle clutching
+a globe above an open book of wisdom, framed by bilingual English and Amharic
+typography) and strictly implements authentic school data, zero placeholder mock tags,
+and independent scroll viewports.
+
+The platform provides dedicated, streamlined interfaces:
+
+  • Admin Panel: Full executive institutional sovereignty, user & role permissions,
+    academic curriculum setup, 5 sections (A-E) per grade with real-time student counts,
+    grade enrollment distribution graph, teacher assignments, whole-school SMS broadcasts,
+    tokenized result SMS generator, and comprehensive audit logs.
+  • Directory / Records Office: Dedicated registrar records office interface.
+    Generates unique 5-digit Student IDs (10001+), registers students with direct-typing
+    Ethiopian Calendar date picker, automatic current Ethiopian date assignment,
+    multi-child parent phone linking, debounced search, and comprehensive 7-tab dossiers.
+  • Teacher Web: Clean, focused academic gradebook interface for faculty members.
+    Strictly scoped to assigned classes, sections, and subjects. Provides spreadsheet-
+    like mark entry, audited mark adjustment requiring mandatory justification,
+    class rankings, and direct SMS communication with parents of assigned students.
+  • Parent SMS Gateway: Parents receive real-time SMS notifications and academic
+    result breakdowns directly from the live database without requiring app installations.
+  • Ethiopian Calendar Engine: Native civil solar calendar conversion utility
+    operating in Africa/Addis_Ababa timezone with automatic current Ethiopian date
+    calculation and direct-typing DD/MM/YYYY date validation.
+
+Institutional System Accounts & Login Credentials:
+  • Executive Administrator:
+    - Portal: Admin Gateway (/admin or /admin/login)
+    - Username: admin
+    - Password: age1324
+    - Role: Sovereign Executive Administrator
+  • Faculty Teacher (Upper Primary Mathematics):
+    - Portal: Teacher Workspace (/login -> Teacher Portal)
+    - Username: abebe
+    - Password: teach123
+    - Role: Teacher (Mr. Abebe Kebede, Staff ID: T-101)
+    - Roster: Grade 7 & Grade 8 Mathematics (Sections A, B, C in 2018 E.C.)
+  • Registrar / Records Office:
+    - Portal: Records Office Gateway (/login -> Records Office)
+    - Username: registrar
+    - Password: dir123
+    - Role: Directory (Sister Martha, Registrar)
+  • Managing Director:
+    - Portal: Director Gateway (/login -> Director Portal)
+    - Username: director1
+    - Password: dir123
+    - Role: Directory (Managing Director)
+  • Academic Director:
+    - Portal: Director Gateway (/login -> Director Portal)
+    - Username: director2
+    - Password: dir123
+    - Role: Directory (Academic Director)
+
+
+2. DESIGN & NAVIGATION ARCHITECTURE
+--------------------------------------------------------------------------------
+• No Top Navbar After Login:
+  After login, the redundant top navbar is completely removed. The full-height
+  sidebar (100vh) hosts the school branding, current Ethiopian date badge (2018 E.C.),
+  global quick search (for authorized staff), navigation tabs, user profile badge,
+  light/dark theme toggle, and sign out button.
+• Dynamic Sections Architecture (A-C Baseline, Grade 5 A-B Only, Dynamic Add/Delete):
+  - Removed default sections D and E across all classes.
+  - Standard baseline features Sections A, B, and C.
+  - Grade 5 Exception: Section C is removed; Grade 5 strictly has only Sections A and B.
+  - Admin & Directory can dynamically add sections to any grade (e.g. adding Section D to Grade 8).
+  - Empty sections (0 enrolled students) can be deleted dynamically with relational safeguards.
+• Single Active Academic Year:
+  The system automatically locks to the current active year (2018 E.C.), eliminating
+  manual year creation clutter.
+• Modern Minimalist SaaS Aesthetic:
+  Pure white background (#FFFFFF) in light mode, sleek dark mode (#0B192C / #111827),
+  zero emojis, refined typography (Outfit, Inter, Noto Sans Ethiopic), and subtle borders.
+
+
+3. TECHNOLOGIES
+--------------------------------------------------------------------------------
+Backend:
+  • Node.js v24.x (using native 'node:sqlite' DatabaseSync engine)
+  • Express.js v4.21 (REST API, structured routing, error handling)
+  • bcryptjs (Salted, secure one-way password hashing)
+  • jsonwebtoken (JWT stateless authentication with bearer tokens)
+  • SQLite 3 (WAL mode journal, PRAGMA foreign_keys = ON, transactions, indexed search)
+
+Frontend:
+  • React 18 & Vite 6 (Ultra-fast HMR and production build system)
+  • Vanilla CSS Design System (Custom tokens, responsive grid, print media styles)
+  • Lucide React (Crisp modern SVG iconography)
+  • Custom Debounced Search Engine (Fast real-time filtering)
+
+
+4. FOLDER STRUCTURE
+--------------------------------------------------------------------------------
+Lakeside/
+├── ABOUT.txt                  # Comprehensive documentation and system manual
+├── package.json               # Monorepo orchestration scripts
+├── dev-runner.js              # Unified runner for local development
+├── server/
+│   ├── package.json
+│   └── src/
+│       ├── config/            # DB configuration, JWT secrets, constants
+│       ├── db/
+│       │   ├── schema.sql     # Normalized relational schema with 25+ tables
+│       │   ├── database.js    # node:sqlite DatabaseSync wrapper with WAL & FKs
+│       │   └── seed.js        # Realistic seed data for Lake Side Academy
+│       ├── middleware/
+│       │   ├── auth.js        # JWT token verification
+│       │   ├── rbac.js        # Role & permission enforcement & teacher scoping
+│       │   └── audit.js       # Automatic audit interceptor logging diffs
+│       ├── routes/
+│       │   ├── auth.routes.js
+│       │   ├── users.routes.js
+│       │   ├── academic.routes.js
+│       │   ├── teachers.routes.js
+│       │   ├── students.routes.js
+│       │   ├── search.routes.js
+│       │   ├── parents.routes.js
+│       │   ├── assessments.routes.js
+│       │   ├── marks.routes.js
+│       │   ├── rankings.routes.js
+│       │   ├── sms.routes.js
+│       │   ├── announcements.routes.js
+│       │   ├── audit.routes.js
+│       │   └── settings.routes.js
+│       ├── utils/
+│       │   ├── studentIdGenerator.js
+│       │   └── logger.js
+│       └── index.js           # Server entry point (:3001)
+├── client/
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── index.html             # With Lake Side Academy crest favicon & fonts
+│   ├── public/
+│   │   ├── logo.png           # Official Lake Side Academy crest logo
+│   │   └── favicon.png
+│   └── src/
+│       ├── components/        # Navbar, Sidebar, Modals, Badges, Tables, Tabs
+│       ├── context/           # AuthContext, NotificationContext
+│       ├── pages/
+│       │   ├── Landing/       # Institutional Landing Page
+│       │   ├── Login/         # Authentication & Quick Credential Selectors
+│       │   ├── Admin/         # Admin Panel (Control, Audit, Assignments, SMS)
+│       │   ├── Directory/     # Registrar Student Manager, Grades & Dossier
+│       │   ├── Teacher/       # Teacher Web & Interactive Gradebook
+│       │   └── ParentSMS/     # Interactive Parent Phone Simulator
+│       ├── styles/            # Vanilla CSS Design System & Theme
+│       ├── services/          # API fetch services
+│       └── App.jsx            # Top-level Router and Layouts
+└── tests/
+    └── run-all-tests.js       # Automated integration test suite (53 assertions)
+
+
+5. SETUP INSTRUCTIONS (LOCAL DEVELOPMENT)
+--------------------------------------------------------------------------------
+Prerequisites:
+  • Node.js v22.5+ or v24+
+  • npm v10+
+
+1. Install Dependencies:
+   npm run install:all
+
+2. Seed Database with Realistic Lake Side Academy Records:
+   npm run seed
+
+3. Start Backend & Frontend Concurrently:
+   npm run dev
+   - Backend API:  http://localhost:3001
+   - Frontend App: http://localhost:5173
+
+4. Run Automated Verification Tests:
+   npm test (or node tests/run-all-tests.js)
+
+5. Default Staff & Faculty Credentials:
+   • Teacher (Faculty Workspace):   Username: abebe     | Password: teach123
+   • Executive Admin Gateway:        Username: admin     | Password: age1324
+   • Registrar / Records Office:    Username: registrar | Password: dir123
+   • Directors (Academic/Managing):  Username: director1 | Password: dir123
+
+
+6. ENVIRONMENT VARIABLES
+--------------------------------------------------------------------------------
+Server:
+  PORT=3001
+  JWT_SECRET=lakeside-super-secure-key-2026-production
+  DB_PATH=./server/lakeside.db
+  NODE_ENV=development
+
+Client:
+  VITE_API_URL=http://localhost:3001/api
+
+
+7. API SUMMARY
+--------------------------------------------------------------------------------
+Authentication & Self-Service:
+  POST /api/auth/login             - Authenticate user, return JWT token & user profile
+  GET  /api/auth/me                - Return authenticated user session & permissions
+  PUT  /api/auth/profile           - Self-service update username, password, email, phone
+  POST /api/auth/logout            - Terminate session and record audit event
+
+User Administration (Admin Only):
+  GET  /api/users                  - List all system user accounts
+  POST /api/users                  - Create new user account
+  PUT  /api/users/:id              - Edit user profile & reset password directly
+  DELETE /api/users/:id            - Deactivate user account
+
+Academic Structures:
+  GET  /api/academic/years         - List academic years (2018 E.C. active)
+  GET  /api/academic/terms         - List terms / semesters
+  GET  /api/academic/classes       - List classes with nested sections & subjects
+  POST /api/academic/classes       - Create class (Admin & Directory authorized)
+  POST /api/academic/sections      - Create section (Admin & Directory authorized)
+  DELETE /api/academic/sections/:id - Delete empty section (Admin & Directory; 0 students guard)
+  GET  /api/academic/subjects      - List curriculum library subjects
+  POST /api/academic/subjects      - Add subject to library (Admin & Directory)
+  PUT  /api/academic/subjects/:id  - Edit subject name/code (Admin & Directory)
+  DELETE /api/academic/subjects/:id - Delete subject from library
+  POST /api/academic/classes/:id/subjects - Assign subject to class
+  DELETE /api/academic/classes/:cid/subjects/:sid - Remove subject from class
+
+Teachers & Assignments:
+  GET  /api/teachers               - List all faculty teachers (teachers.view)
+  POST /api/teachers               - Create teacher account & profile
+  GET  /api/teachers/my-assignments - Get assigned classes/sections (Teacher)
+  GET  /api/teachers/assignments   - List teacher class/section/subject mappings
+  POST /api/teachers/assignments   - Assign teacher to class/section/subject (Admin)
+  DELETE /api/teachers/assignments/:id - Remove teacher assignment (Admin)
+
+Students & Directory:
+  GET  /api/students               - List students (supports filters & pagination)
+  POST /api/students               - Register new student (auto-generates 5-digit ID)
+  POST /api/students/existing      - Register existing student preserving records
+  GET  /api/students/next-id       - Preview next 5-digit Student ID
+  GET  /api/students/:id           - Get comprehensive student details (7 tabs)
+  PUT  /api/students/:id           - Update student info (audited)
+  POST /api/students/:id/promote   - Promote student to next grade preserving history
+  GET  /api/search/students        - Real-time debounced multi-criteria student search
+  GET  /api/search/global          - Real-time global search across students, teachers & parents
+
+Parents:
+  GET  /api/parents                - List parents (parents.view)
+  POST /api/parents                - Create parent & link to student(s)
+  PUT  /api/parents/:id            - Update parent contact details
+
+Assessments & Marks:
+  GET  /api/assessments            - List assessments for class/section/subject
+  POST /api/assessments            - Create assessment (Tests, Mid, Final)
+  GET  /api/marks                  - Get marksheet for assessment
+  POST /api/marks/batch            - Batch enter / update marks
+  PUT  /api/marks/:id/adjust       - Adjust mark with mandatory reason & audit history
+
+Rankings:
+  GET  /api/rankings               - Compute 1224 rankings with benchmarks
+
+SMS Engine:
+  GET  /api/sms/broadcasts         - List SMS broadcast history
+  POST /api/sms/broadcast          - Dispatch announcement SMS to targeted audience (supports student_ids)
+  POST /api/sms/result-broadcast   - Auto-generate & dispatch Result SMS from DB
+  GET  /api/sms/calculator         - Compute deduplicated recipient audience (supports student_ids)
+  GET  /api/sms/simulator/feed     - Live feed of simulated SMS messages for parents
+  GET  /api/sms/simulator/parents  - List of parents with active message logs
+  POST /api/sms/retry/:id          - Retry failed SMS dispatch
+
+Audit & Security:
+  GET  /api/audit/logs             - List security & data audit trail with search & diffs
+  GET  /api/audit/stats            - Live operational telemetry metrics for Admin dashboard
+
+Settings:
+  GET  /api/settings               - Get school configuration & SMS provider settings
+  PUT  /api/settings               - Update school settings (Admin)
+
+
+8. SECURITY & INTEGRITY SAFEGUARDS
+--------------------------------------------------------------------------------
+  • Password Security: Passwords hashed with bcryptjs (10 salt rounds).
+  • SQL Injection Prevention: 100% parameterised queries through node:sqlite.
+  • Scoped Access Control: Teachers can only view/grade students in their assigned
+    classes. Unassigned classes return HTTP 403 Forbidden.
+  • Immutability of Student IDs: Student IDs remain fixed 5-digit numbers throughout
+    a student's entire tenure at Lake Side Academy.
+  • Historical Record Preservation: Promoting a student creates a new active
+    enrollment record while keeping past academic year assignments and marks intact.
+  • Mandatory Reason Logging: Any adjustment to a student's mark requires an
+    explanation and logs old and new scores with user identity and timestamp.
+  • Parent Phone Deduplication: Prevents sending redundant duplicate broadcast
+    messages when parents have multiple children in the targeted group.
+  • Dual Class/Section Authority: Both Admin and Directory can create and maintain
+    classes and sections.
+
+
+Date: 2026-09-04 (Release 3.5.0 - Strict Role Confinement & Faculty Privacy Isolation)
+  • Strict Role-Based Portal Confinement:
+    - Logged-in users are strictly confined to their authorized portal and cannot access or open other workspaces.
+    - Teachers (role: teacher) can exclusively access Teacher Workspace. Director Portal and Records Office cards are hidden on the landing page and blocked from navigation.
+    - Directory staff (role: directory) can exclusively access Records Office & Director Portal. Teacher Workspace is hidden.
+    - Admin (role: admin) has full sovereign system governance via the Admin Gateway (/admin).
+  • Faculty Teacher Privacy & Hard Access Barriers:
+    - Hidden Quick Search from teacher sidebar: Teachers cannot perform global dossier lookups.
+    - Hard-blocked Audit Logs: GET /api/audit/logs and GET /api/audit/stats return HTTP 403 Forbidden to teachers.
+    - Concealed Audit Trails in Student Dossier: GET /api/students/:id returns audit_history as [] for teachers.
+    - Protected Parent Directory: GET /api/parents requires parents.view permission (returns HTTP 403 to teachers).
+    - Protected Staff Directory: GET /api/teachers requires teachers.view permission (returns HTTP 403 to teachers).
+    - Scoped Global Search: GET /api/search/global returns only students in assigned classes, with 0 teachers and 0 parents.
+    - Rigorous Teacher Assignment Enforcement: checkTeacherAssignment validates class_id and section_id independently to prevent any query bypass.
+  • Complete System Specification:
+    - Created master manual all.txt in project root detailing full system design, features, architecture, and credentials.
+
+
+Date: 2026-09-04 (Release 3.1.0 - Per-Class Subject Management & Landing Page Refinement)
+  • Landing Page Refinement:
+    - Removed administrative portal description text from the landing page.
+    - Removed student search bar form from landing page for streamlined institutional entrance.
+  • Per-Class Subject Management for Directory & Admin:
+    - Added relational class_subjects table mapping classes to their curriculum subjects.
+    - Initialized authentic Ethiopian elementary curriculum subjects for Grades 1–4 (Primary Cycle 1) and Grades 5–8 (Primary Cycle 2).
+    - Granted full authority to Directory (Registrar / Records Office) and Admin roles to:
+      1. Add subjects to each individual class (either from curriculum library or creating new).
+      2. Edit subject names and codes with immediate synchronization.
+      3. Remove subjects from individual classes.
+      4. Delete subjects permanently from the school curriculum library with safety guards.
+    - Added API endpoints:
+      - GET /api/academic/classes (includes nested subjects for each class)
+      - POST /api/academic/classes/:classId/subjects (assign subject to class)
+      - DELETE /api/academic/classes/:classId/subjects/:subjectId (remove subject from class)
+      - POST /api/academic/subjects (authorized for admin & directory)
+      - PUT /api/academic/subjects/:id (edit subject name/code)
+      - DELETE /api/academic/subjects/:id (delete subject)
+    - Upgraded AcademicManagement UI with per-class subject chips, assign modals, edit modals, and delete safety confirmations.
+  • Automated Verification:
+    - 16/16 tests passing in tests/test-academic-subjects.js.
+    - Vite client build passing with 0 errors.
+
+Date: 2026-09-04 (Release 3.0.0 - 100% Real Production Engine & Zero-Mock Architecture)
+  • Zero Fake / Mock / Demo Data Guarantee:
+    - Purged all fake student accounts, fake parent records, fake test marks, fake assessments, and fake SMS logs.
+    - Database starts in an authentic zero-record state (0 students, 0 teachers, 0 marks, 0 SMS messages).
+    - If empty, UI strictly displays authentic zero (`0`) counts and institutional empty states with direct registration CTAs.
+  • Ethiopian Elementary Curriculum (Grades 1–8):
+    - Configured all 8 elementary school grades (Grade 1 through Grade 8).
+    - 16 distinct sections (Section A and Section B per grade).
+    - Primary Cycle 1 Leaderboards (Grades 1–4) & Primary Cycle 2 Leaderboards (Grades 5–8) in Rankings engine.
+    - Full Ethiopian curriculum subject coverage: Mathematics, English, Amharic, Environmental Science, General Science, Social Studies, Citizenship Education, Information & Communication Technology, Health & Physical Education, Performing & Visual Arts.
+  • Ethiopian Calendar (E.C. / ዓ.ም) Integration:
+    - Multi-year academic session tracking using Ethiopian Calendar: 2018 E.C. (Current Active), 2017 E.C., 2016 E.C., 2015 E.C.
+    - First Semester and Second Semester term structures.
+  • Institutional Security & Secret Admin Portal:
+    - Admin login is fully decoupled and hidden from public entrance. Accessible exclusively via direct URL (/admin or /admin/login).
+    - Complete removal of demo credential displays ("Executive Staff Credentials" box) and quick-login demo buttons.
+    - Removed backdoor demo-switch endpoint: POST /api/auth/demo-switch returns 403 Forbidden in production.
+    - Server environment secrets dynamically loaded from .env (JWT_SECRET, SMS_ETHIOPIA_API_KEY).
+    - Multi-director governance support (director1, director2, etc.) managed by sovereign Admin.
+  • Strict Pure-White Visual Hierarchy:
+    - Pure white (#FFFFFF) background across all containers, body, layout, and entrance viewport in light mode.
+    - Zero emojis across the entire platform (replaced with crisp, semantic Lucide SVG iconography).
+    - Streamlined, institutional landing page focused on school identity and clean portal access (Director, Records Office, Teacher, Student lookup).
+  • Build & Runtime Verification:
+    - 100% passing Vite production build (1622 modules transformed, 0 errors).
+    - Backend API and SQLite database validated with 8 classes, 16 sections, 4 E.C. years, 0 fake records.
+
+Date: 2026-09-04 (Release 2.2.0 - SMSEthiopia API v2 Gateway, 10/10 SaaS Landing Page, & Dual Theme Engine)
+  • Live SMSEthiopia API v2 Gateway Integration:
+    - Direct integration with https://smsethiopia.com/api/v2/sms/send using live production API key.
+    - Automatic Ethiopian mobile phone normalization: converts 09..., +251..., and 9... into 12-digit 2519XXXXXXXX.
+    - Real ULID Message ID tracking (e.g. 01M1PEENSTRE1EZVMTM41SJAWM) recorded permanently in sms_recipients.
+    - Real segment calculation: GSM 160 / 153 and Unicode/Amharic (ግዕዝ) 70 / 67.
+    - Live delivery status lookup and bidirectional synchronization via GET /api/sms/sync-status/:recipientId.
+    - Test gateway connection and live ping diagnostics via GET /api/sms/provider-status.
+  • System-Wide Light & Dark Mode Engine:
+    - Custom ThemeProvider with localStorage persistence and OS prefers-color-scheme detection.
+    - Dedicated [data-theme="dark"] CSS rules across all components (tables, inputs, modals, cards, navbars, dropdowns).
+    - Quick Sun/Moon toggle in navigation bar and Landing Page header.
+    - Appearance & Theme selector in Admin Settings page.
+
+Date: 2026-09-04 (Release 2.1.0 - Professional School Office UI/UX Overhaul)
+  • Global Real-time Multi-Entity Search: Pinned centered search in navbar and directory
+    querying students (name, 5-digit ID, parent phone), teachers, and parents with
+    debouncing and immediate click-through to complete records.
+  • Sectioned Collapsible Sidebar: Rebuilt with structured category headers (MAIN,
+    SCHOOL, ACADEMICS, COMMUNICATION, SYSTEM) and 72px collapse mode for maximum screen density.
+  • Admin Control Center Overhaul: High-priority Quick Actions bar, compact summary
+    cards, and 4 live operational feeds (Recent Registrations, Mark Adjustments with
+    diff inspection, SMS Broadcasts, and Security Audit Logs).
+  • Directory Records Office & Student List: Created dedicated data table page with
+    multi-column sorting (ID, Name, Class), status filtering, and fast row-level actions.
+  • 3-Section Structured Registration Wizard: Basic Information, Academic Placement,
+    Guardian Contacts with dynamic multi-parent support, auto-generated 5-digit ID preview,
+    and post-enrollment confirmation screen.
+  • Teacher Web Gradebook: Streamlined class cards with direct gradebook entry,
+    keyboard-friendly inputs, live averages, unsaved changes indicators, and max-mark validation.
+  • Security & Audit Logs UI: Added user search input, action/entity filters, and
+    side-by-side JSON diff inspection.
+
+Date: 2026-09-04 (Release 2.0.0)
+  • Official Crest Logo Integration: Deployed official seal (/logo.png) to client favicon,
+    navigation bar, landing page, login portal, student dossier print banner, settings,
+    and the Parent SMS handset simulator.
+  • Independent Scroll Architecture: Eliminated single-window scrolling. Viewports
+    now independently scroll within .sidebar and .main-content while keeping the
+    root window fixed and the 68px navbar pinned.
+  • Grade & Section Management: Granted dual authority to both Admin and Directory
+    roles for creating and managing classes and sections.
+  • Institutional Brand Polish: Renamed all instances to Lake Side Academy |
+    ሌክ ሳይድ አካዳሚ. Upgraded color tokens to institutional academy navy and refined gold.
+  • Mobile & Print Media CSS: Added responsive breakpoints and print media styles
+    for clean student dossier printouts.
+
+
+Date: 2026-09-04 (Release 3.2.0 - Ethiopian Calendar, Top Navbar Removal, 5 Sections A-E & UI Simplification)
+  • Top Navbar Removal After Login:
+    - Completely removed top navbar when logged in as requested ("no need navbar after login with side menu").
+    - Transferred all brand identity, live Ethiopian calendar date badges, portal switching (Admin, Records, Faculty),
+      quick search, user profile, theme toggle (Sun/Moon), and logout into the sleek full-height 100vh Sidebar.
+  • Full Ethiopian Calendar Engine & Direct-Typing Date Picker:
+    - Implemented exact mathematical civil solar JDN conversion utility in server and client (Africa/Addis_Ababa timezone).
+    - Created EthiopianDatePicker supporting direct typing in DD/MM/YYYY, DD-MM-YYYY, DD MM YYYY formats with instantaneous validation.
+    - Automatic Ethiopian date generation for registrations and current date badges (2018 E.C. • 29/12/2018).
+    - All user-facing dates displayed in Ethiopian Calendar format across dossiers, broadcasts, and logs.
+  • Student Dossier UI Overhaul (7 Tabs) & Removal of Residential Address:
+    - Permanently removed Residential Address from student registration, student profile, and student dossier.
+    - Upgraded UI for all 7 tabs: Overview, Parent Information, Academic Results, Academic History,
+      Rankings & Performance, SMS History, and Audit History.
+    - Multi-child sibling association displayed under parent phone records.
+  • 5 Sections Per Grade (A, B, C, D, E) & Real-time Enrolled Counter:
+    - Seeded and expanded all 8 elementary grades to 5 sections each (Grade 1A-1E to Grade 8A-8E; 40 sections total).
+    - Registration dropdown and curriculum views display live student count per section.
+  • Single Active Academic Year & Dashboard Streamlining:
+    - Locked to single current active academic year (2018 E.C.); removed manual add/delete year controls.
+    - Replaced raw security logs table on Admin Dashboard with Grade Enrollment Distribution bar graph.
+    - Removed Promotions menu item and redundant marketing cards from Directory overview.
+
+
+Date: 2026-09-04 (Release 3.3.0 - Comprehensive Academic, Kindergarten, Rankings, SMS & UI Enhancements)
+  • Removal of Sidebar Portal Switcher:
+    - Removed the 3-button 'Admin | Records | Faculty' switcher strip from Sidebar.
+    - Users operate strictly within their authenticated role without cross-switching.
+  • Modern Segmented Pill Tabs & Numeric Ethiopian Dates in Student Dossier:
+    - Overhauled all 7 tabs in Student Dossier with borderless segmented pill styles (#0D9488 active highlight).
+    - Eliminated raw HTML button borders and harsh black lines shown in screenshot.
+    - Formatted all student dates (DOB, Registration Date, SMS Date, Audit Date) as numeric 'DD/MM/YYYY'.
+  • Duplicate Student Prevention with Same Name / Parent Phone Validation:
+    - Enforced rule: Students can share identical names (e.g. 'Selam Worku'), but CANNOT share both identical name and parent phone number.
+    - Registration validates against existing active students and rejects identical name + parent phone with HTTP 400.
+  • Same First Name Homonym Filter in Student Directory:
+    - Added instant homonym filter dropdown on Student List page:
+      * All Students
+      * Same First Name in Section
+      * Same First Name in Grade
+      * Globally Across School
+    - Colored badges display count of matching homonyms per section, grade, or global school roster.
+  • Admin Dashboard 6 Visual Analytics Graphs (Zero 'Recent ...' Lists):
+    - Completely removed all 'Recent ...' lists (Recent Registrations, Recent Mark Adjustments, Recent SMS Broadcasts).
+    - Added 6 responsive SVG visual charts:
+      1. Grade & Kindergarten Enrollment Distribution (KG 1-3, Grade 1-8)
+      2. Gender Breakdown (Male vs. Female bar with counts and percentages)
+      3. Section Roster Balance (Sections A through E distribution)
+      4. Academic Standing Tiers (Distinction, Proficient, Average, Needs Support)
+      5. Student Classification Mix (New Intake vs. Continuing)
+      6. SMS Gateway Health & Delivery Breakdown (Sent, Delivered, Failed)
+  • Full Kindergarten Integration (KG 1, KG 2, KG 3):
+    - Added 'KG 1', 'KG 2', and 'KG 3' classes to curriculum with sections A, B, C, D, and E (15 new kindergarten sections).
+    - Seeded core early childhood subjects (Literacy & Phonics, Early Numeracy, Amharic Basics, Arts & Crafts, Environmental Science).
+  • Semester Terms & Clean Assessment Structure:
+    - Terms configured as 'First Semester', 'Second Semester', and 'Average Semester'.
+    - Assessments streamlined to 'Mid', 'Final', and 'Tests' (replacing individual Test 1, 2...).
+    - Standardized shorthands: F.Mid, F.Final, F.Tests, S.Mid, S.Final, S.Tests.
+  • Live Rankings Engine with Olympic Tie-Breaker & Minimum 50 Marks Threshold:
+    - Removed manual 'Compute Rankings' button; rankings calculate live and instantaneously.
+    - Scope filter: 'Grade 1 - 8', 'Grades 1 - 4', 'Grades 5 - 8', 'KG 1 - KG 3'.
+    - Implemented Olympic competition tie-breaker: If two students tie (e.g. 98%), they are ranked '1 A' and '1 B', and the next student skips to '3 C'.
+    - Strict 50 Marks Qualification: Students must score at least 50 marks to be ranked in the Top 10 (0 marks cannot be ranked; designated 'Unranked (<50)').
+    - Top 3 gold/silver/bronze podium cards with bold scores, and empty state 'No students ranked' when no students qualify.
+  • Result SMS Tokens & Bilingual Templates (English & Amharic):
+    - Supported token syntax: +{student_name}, +{class_section}, +{assessment_name}, +{total_marks}, +{max_marks}, +{average}, +{rank}.
+    - Added one-click token insert chips, character and GSM/Unicode segment calculator.
+    - Provided built-in English and Amharic (ግዕዝ) template presets with real-time mobile phone handset preview.
+
+
+Date: 2026-09-04 (Release 3.4.0 - Academic Year Auto-Current, Term Removal, Grade/KG Scoping, Subject Codes & Dark Theme Fixes)
+  • Academic Year Auto-Current Badge:
+    - Removed redundant Academic Year select dropdowns where only the current year is active.
+    - Standardized clean status badge 'Academic Year: 2018 E.C. (Active)' across Student Search, Student List, Rankings, Teacher Rankings, and Result SMS.
+  • Term / Semester Filter Removal:
+    - Removed term selection dropdowns from Result SMS, Teacher Rankings, and Assessments oversight.
+    - Assessment Benchmarks ('ALL', 'Mid', 'Final', 'Tests', 'F.Mid', 'F.Final', 'F.Tests', 'S.Mid', 'S.Final', 'S.Tests') handle term scoping seamlessly via shorthand prefixes (F. = First Semester, S. = Second Semester).
+    - Result SMS endpoint resolves benchmark prefixes automatically and allows dispatching without requiring term_id.
+  • Universal Class / Grade & Kindergarten Scoping:
+    - Added 'All Classes & Grades (KG 1 - Grade 8)', 'All Kindergarten (KG 1 - KG 3)', and 'All Primary Grades (Grade 1 - Grade 8)' options to filter dropdowns.
+    - Backend (/api/students and /api/search/students) updated to support 'ALL_KG' and 'ALL_PRIMARY' filters natively.
+  • Academic Structure & Curriculum Subject Codes:
+    - Grades 1 through 8 and KG 1 through 3 verified with 5 sections (A, B, C, D, E) each (total 55 active sections).
+    - Curriculum subjects library, class assignments, and modal assignment dropdowns list subjects sorted and badged by their official codes ([MATH], [ENG], [AMH], [SCI], [SOC], [ENV], [ICT], [CIT], [HPE], [PVA]).
+  • Primary Guardian & UI Dark Theme Contrast Fixes:
+    - Fixed dark mode colors in ParentManagement.jsx: Guardian full names, occupation labels, and contact rows use high-contrast theme typography.
+    - Fixed Connected Children box inside parent cards: Replaced stark white background with dark-theme surface (`#151F32`), matching border (`#1E293B`), and vibrant student names.
+    - Fixed SMS Broadcast Center header and Audience Calculation card: High-contrast title and metric boxes, eliminating harsh un-themed white blocks in dark mode.
+    - Fixed Student Search and Student List headers, filters, and table row typography in dark mode.
+    - Added browser rgb serializer safeguards in index.css to prevent inline styles from breaking dark mode contrast.
+  • Removed 'Student & Parent' card from landing page.
+
+
+Date: 2026-09-04 (Release 3.6.0 - Teacher Settings, Dynamic Section Control, SMS Multi-Student Targeting, Dark Mode Selected UI & Landing Gateways)
+  • Teacher Settings & Profile Self-Service:
+    - Created TeacherSettingsPage with profile overview, username update, and password update.
+    - Password updates require cryptographic verification of the current password via bcrypt.compareSync.
+    - Added PUT /api/auth/profile for updating username, password, email, and phone with token re-issuance.
+    - Admin user administration: Added PUT /api/users/:id allowing sovereign executive admin to update any user's profile and reset passwords directly.
+  • Selected Buttons UI Contrast Fix (Dark & Light Mode):
+    - Completely resolved the washed-out white/pale button issue in TeacherSMSPage and SMS Broadcast when sections are selected.
+    - Implemented glowing purple accent tint (rgba(124, 58, 237, 0.28)), 2px solid #A78BFA border, active bullet dot, and bold high-contrast text in dark mode.
+    - Clean lavender surface (#EDE9FE) with 2px solid #7C3AED and deep purple text in light mode.
+  • Academic Sections Reconfiguration & Dynamic Controls:
+    - Purged default sections D and E across all Kindergarten and Primary grades.
+    - Default baseline configured to Sections A, B, and C (32 sections total).
+    - Grade 5 Exception: Removed Section C from Grade 5 as requested (% rule); Grade 5 strictly has only Section A and Section B.
+    - Added dynamic section addition: Admin and Directory can add sections to any class (e.g. adding Section D to Grade 8, so only Grade 8 has D, while others maintain A - C).
+    - Added dynamic section deletion: Added DELETE /api/academic/sections/:id with safety verification that 0 students are enrolled in the target section.
+    - Updated teacher Abebe's roster to Grade 7 (A, B, C) and Grade 8 (A, B, C) Mathematics.
+  • Class & Parent SMS Multi-Student Targeting:
+    - In TeacherSMSPage, added recipient targeting scope toggle: 'Whole Section' vs 'Select Specific Students'.
+    - When 'Select Specific Students' is active, teachers can search students by name letters or 5-digit ID.
+    - Batch 'Select All' and 'Clear All' buttons.
+    - Individual student cards with student name, 5-digit ID, section badge, and parent phone number.
+    - Backend POST /api/sms/broadcast and POST /api/sms/calculate-recipients accept target_type: 'STUDENT' with student_ids: [...].
+  • Functional Sign Out & Landing Portal Redirectors:
+    - Fixed Sign Out in App.jsx: clicking Sign Out immediately resets activePortal to 'landing' and clears authenticated layout states.
+    - Overhauled LandingPage with dedicated, interactive gateway cards: Teacher Workspace, Records Office, Director Portal, and Admin Gateway with glowing hover lift aesthetics.
+    - Updated LoginPage to display contextual badges matching the destination portal.
+
+
+Date: 2026-09-05 (Release 3.7.0 - Complete Demo Marks & 15 Students per Class Section Seed)
+  • Exactly 15 Enrolled Students per Class Section:
+    - Seeded exactly 15 enrolled students across all 32 active class sections:
+      * KG 1, KG 2, KG 3 (Sections A, B, C = 9 sections * 15 = 135 students)
+      * Grades 1, 2, 3, 4 (Sections A, B, C = 12 sections * 15 = 180 students)
+      * Grade 5 (Sections A, B only = 2 sections * 15 = 30 students)
+      * Grades 6, 7, 8 (Sections A, B, C = 9 sections * 15 = 135 students)
+      * Total active sections: 32 | Total enrolled students: 480
+    - All 480 students assigned unique 5-digit Student IDs (10001 through 10480), authentic Ethiopian full names (First + Father + Grandfather), balanced gender representation, Ethiopian Calendar birthdates, and sequential roll numbers 1-15 per section.
+    - 480 parent profiles created with valid Ethiopian phone numbers (+251 91 X), realistic occupations, and primary parent guardian links.
+  • Realistic First Semester 2018 E.C. Demo Marks:
+    - Created 357 assessments across all 32 class sections for First Semester:
+      * Benchmark 1: Tests (max 20 marks, weight 20%)
+      * Benchmark 2: Mid (max 30 marks, weight 30%)
+      * Benchmark 3: Final (max 50 marks, weight 50%)
+    - Populated 5,355 individual student mark records with realistic performance distributions:
+      * Roll 1 & Roll 2: Honors tier (~96%) testing the Olympic competition tie-breaker ('1 A', '1 B', skipping to '3 C').
+      * Roll 3: High achiever (~91%).
+      * Roll 4-9: Solid proficient (70% - 86%).
+      * Roll 10-13: Average (57% - 68%).
+      * Roll 14: Passing (52%).
+      * Roll 15: Needs support (48% - testing unranked threshold for <50 marks).
+    - Mr. Abebe Kebede's upper primary mathematics classes (Grade 7 A-C & Grade 8 A-C) fully populated with marks entered under his faculty account.
+  • SMS Simulator Feed & Sample Broadcasts:
+    - Pre-seeded initial SMS broadcast and 15 delivery recipient logs in the database.
+    - SMS Simulator feed immediately renders dispatched messages for parents.
+  • Test Suite Enhancements & Clean Seed Sequence:
+    - Reset `sqlite_sequence` during database seeding ensuring autoincrement IDs always start from 1.
+    - Flexibly match assessment benchmarks ('Mid', 'Midterm', 'Tests', 'Final') across rankings and SMS routes.
+    - 53 of 53 automated tests in `tests/run-all-tests.js` pass with 100% success rate.
+
+
+Date: 2026-09-05 (Release 3.8.0 - UI Polishing, Demographic Matrix & Pure Numeric Rankings)
+  • Pure Numeric Subject-Scoped Rankings:
+    - Standardized all rankings to sequential integers (1, 2, 3...) without string prefixes.
+    - Preserved Olympic tie-breaker skipping (e.g. tie for 1st results in ranks 1, 1, 3).
+  • Ethiopian Action Terminology:
+    - Updated mark entry save buttons in Teacher Workspace to 'አስተካክል' (Correct / Adjust).
+  • Zero Email Footprint:
+    - Completely removed all email input fields and table columns across student registration, parent management, and student list interfaces.
+  • Gender Shorthand & Visual Badges:
+    - Standardized gender display across all tables to 'M' (Male, Blue badge) and 'F' (Female, Pink badge).
+    - Added real-time demographic breakdown counters to the Student List toolbar and Directory Dashboard.
+  • Class & Section Demographic Matrix:
+    - Integrated comprehensive Demographic Matrix tab in Directory Dashboard showing Grade, Section, Male (M) count, Female (F) count, Total Enrolled (15 / Section compliance), visual gender balance ratio bar, and Ethiopian birth year span.
+  • Direct Dossier Linking:
+    - Connected children popup modal in Parent Directory now includes direct 'Dossier' action buttons to immediately navigate to student profile.
+
+
+Date: 2026-09-05 (Release 3.9.0 - Dynamic Assessments with Max 100 Rule, School ID Manager, Promotion & Passing Threshold, Dual-Mode Student Intake & Re-Enrollment)
+  • Dynamic Assessments & Multi-Test Instance Engine:
+    - Added support for multiple test instances per subject (Test 1, Test 2, Quiz 1, Quiz 2, etc.) along with Mid, Final, Bonus, and Custom types.
+    - Strict 100 maximum total marks policy enforced across client and server: combined max marks for all assessments in a subject/section/term cannot exceed 100 points.
+    - Added GET /api/assessments/subject-summary returning current total points, breakdown, and remaining quota.
+    - Real-time points allocation progress bar and dynamic assessment creation modal in MarkEntryPage.
+    - Preserved authentic Amharic 'አስተካክል' (Adjust/Save) mark entry action label.
+  • Dedicated Read-Only School ID Manager:
+    - Created StudentIDLookupPage (/id-lookup) for student identity verification and badge issuance.
+    - Fast multi-criteria search by 5-digit Student ID or Student Name with Grade/Section filters.
+    - Real-time gender demographic counters ('M' in #2563EB, 'F' in #DB2777).
+    - Strict security guarantee: zero marks, zero test scores, and zero edit actions to prevent accidental data modification.
+    - Photorealistic printable School ID Card badge modal with school crest, photo box, 5-digit ID, DOB, grade/section, parent phone, QR code, and registrar signature.
+  • Directory Promotion Evaluation Engine & Minimum Passing Cutoff:
+    - Added GET /api/academic/promotion-evaluations calculating student cumulative weighted overall averages.
+    - Directory/Registrar configurable passing threshold (default 50.0%) stored in school_settings with quick-select buttons (50%, 55%, 60%, 65%, 70%) and 'Save As Default'.
+    - Automated status decisioning: Promoted (Emerald badge) vs Retained (Amber badge).
+    - Summary KPI metrics: Total Students, Promoted Count & Percentage, Retained Count & Percentage, Class-wide Overall Average.
+    - Complete Details modal displaying subject-by-subject score breakdown, pass/fail status, and one-click grade advancement form.
+  • Dual-Mode Student Registration (New Intake vs Returning Re-Enrollment):
+    - Added dual-mode switcher in StudentRegistration.jsx: 'New Student Intake' vs 'Returning / Old Student Enrollment'.
+    - Returning Student Search: GET /api/students/search-returning by Name, 5-digit ID, or Parent Phone.
+    - Candidate selection locks permanent 5-digit Student ID (zero duplicate ID creation).
+    - Target academic year, target grade level, and target section selection for next year.
+    - Submission via POST /api/students/re-enroll logs RE_ENROLLMENT in student_history and RE_ENROLL_STUDENT in audit_logs.
+  • Automated Test Verification:
+    - Added Suites 11, 12, and 13 to tests/run-all-tests.js covering dynamic assessments, 100-mark rejection, promotion evaluations, returning search, and re-enrollment.
+    - 77 of 77 tests pass with 100% success rate.
+
+
+Date: 2026-09-07 (Release 3.9.1 - Git VCS Initialization, Security Shielding & Deployment Readiness)
+  • Git Version Control & Deployment Foundations:
+    - Created comprehensive `.gitignore` safeguarding live `.env` secrets, SMS Ethiopia API credentials, ephemeral SQLite `-wal`/`-shm` runtime locks, and local database binaries.
+    - Authored production-ready `.env.example` template with clear environment variable directives.
+    - Authored root `README.md` detailing system architecture, role portals, quick start commands, default test credentials, and automated testing procedures.
+    - Verified Git toolchain availability (Mingit) on local Windows host.
+
+
+10. VERIFICATION & STATUS
+--------------------------------------------------------------------------------
+Last Updated: 2026-09-07 (01/01/2018 E.C.)
+Documentation Version: 3.9.1
+Status: Production-Ready & Verified (Vite Build 0 Errors, Clean SQLite DB, 77/77 Automated Tests Passed, Git VCS Initialized)
+================================================================================
+
+
+
+

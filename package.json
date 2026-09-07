@@ -1,0 +1,14 @@
+{
+  "name": "lakeside-school-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lakeside School Management System - Production Ready",
+  "scripts": {
+    "install:all": "cmd /c \"npm install && cd server && npm install && cd ../client && npm install\"",
+    "server": "node server/src/index.js",
+    "client": "cmd /c \"cd client && npm run dev\"",
+    "dev": "node dev-runner.js",
+    "seed": "node server/src/db/seed.js",
+    "test": "node tests/run-all-tests.js"
+  }
+}
