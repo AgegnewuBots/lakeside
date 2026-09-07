@@ -111,6 +111,9 @@ export default function MarkEntryPage() {
     } else if (type === 'Bonus') {
       setAssessmentName('Bonus Project / Extra Credit');
       setAssessmentMaxMarks(String(Math.min(5, remaining)));
+    } else if (type === 'NonAttended') {
+      setAssessmentName('Non-attended Test');
+      setAssessmentMaxMarks(String(Math.min(10, remaining)));
     }
   };
 
@@ -567,7 +570,7 @@ export default function MarkEntryPage() {
               )}
             </div>
 
-            {/* Primary Save Button - Renamed to "አስተካክል" */}
+            {/* Primary Save Button */}
             <button
               type="submit"
               className="btn btn-gold btn-lg"
@@ -576,7 +579,7 @@ export default function MarkEntryPage() {
               title="Save and update gradebook marks"
             >
               <Save size={20} />
-              <span>{saving ? 'በማስቀመጥ ላይ...' : 'አስተካክል'}</span>
+              <span>{saving ? 'Saving Marks...' : 'Save Marks'}</span>
             </button>
           </div>
 
@@ -853,7 +856,7 @@ export default function MarkEntryPage() {
                 style={{ fontWeight: 800 }}
               >
                 <Save size={16} />
-                <span>{savingSingleMark ? 'በማስቀመጥ ላይ...' : 'አስተካክል (Save Mark)'}</span>
+                <span>{savingSingleMark ? 'Saving...' : 'Save Mark'}</span>
               </button>
             </div>
           </form>
@@ -892,12 +895,13 @@ export default function MarkEntryPage() {
             {/* Assessment Type */}
             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
               <label className="form-label" style={{ fontWeight: 700 }}>Assessment Type *</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
                 {[
-                  { id: 'Test', label: 'Test', desc: 'Multiple allowed' },
+                  { id: 'Test', label: 'Test', desc: 'Continuous' },
                   { id: 'Mid', label: 'Midterm', desc: 'Mid Exam' },
                   { id: 'Final', label: 'Final', desc: 'Final Exam' },
-                  { id: 'Bonus', label: 'Bonus', desc: 'Extra credit' }
+                  { id: 'Bonus', label: 'Bonus', desc: 'Extra credit' },
+                  { id: 'NonAttended', label: 'Non-Attended', desc: 'Zero/Absent Test' }
                 ].map(item => (
                   <button
                     key={item.id}

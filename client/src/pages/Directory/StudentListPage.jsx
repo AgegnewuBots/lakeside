@@ -158,7 +158,7 @@ export default function StudentListPage({ onSelectStudent, onRegisterStudent }) 
     });
 
     return list;
-  }, [students, searchTerm, selectedClassId, selectedSectionId, selectedStatus, firstNameFilter, firstNameStats, sortField, sortOrder]);
+  }, [students, searchTerm, selectedClassId, selectedSectionId, firstNameFilter, firstNameStats, sortField, sortOrder]);
 
   const selectedClassObj = classes.find(c => String(c.id) === String(selectedClassId));
 

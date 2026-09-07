@@ -287,6 +287,104 @@ router.post('/broadcast', authenticate, async (req, res) => {
   });
 });
 
+// POST /api/sms/send-individual (Direct SMS from Directory / Records to a specific student's parent phone)
+router.post('/send-individual', authenticate, async (req, res) => {
+  const { student_id, phone_number, message } = req.body;
+
+  if (!phone_number || !message || !message.trim()) {
+    return res.status(400).json({ error: 'Parent phone number and message text are required.' });
+  }
+
+  // Teacher scoping check if sender is teacher
+  if (req.user.role === 'teacher' && student_id) {
+    const teacher = db.queryOne('SELECT id FROM teachers WHERE user_id = ?', [req.user.id]);
+    const isAssigned = db.queryOne(`
+      SELECT 1 FROM student_class_assignments csa
+      JOIN teacher_assignments ta ON ta.class_id = csa.class_id AND ta.section_id = csa.section_id
+      WHERE (csa.student_id = ? OR csa.student_id IN (SELECT id FROM students WHERE student_id = ?))
+        AND ta.teacher_id = ?
+    `, [student_id, student_id, teacher?.id]);
+    if (!isAssigned) {
+      return res.status(403).json({ error: 'Access denied: You are not assigned to this student.' });
+    }
+  }
+
+  let studentObj = null;
+  if (student_id) {
+    studentObj = db.queryOne('SELECT id, student_id, full_name FROM students WHERE id = ? OR student_id = ?', [student_id, student_id]);
+  }
+
+  const cleanPhone = phone_number.trim();
+  const trimmedMsg = message.trim();
+
+  // 1. Create Broadcast entry
+  const bcastRes = db.run(`
+    INSERT INTO sms_broadcasts (title, broadcast_type, sender_user_id, sender_role, target_type, target_filters_json, message_template, total_recipients, sent_count, failed_count, status)
+    VALUES (?, 'ANNOUNCEMENT', ?, ?, 'STUDENT', ?, ?, 1, 0, 0, 'Processing')
+  `, [
+    studentObj ? `Direct SMS to parent of ${studentObj.full_name}` : `Direct SMS to ${cleanPhone}`,
+    req.user.id,
+    req.user.role,
+    JSON.stringify({ student_id: studentObj?.id, phone: cleanPhone }),
+    trimmedMsg
+  ]);
+
+  const broadcastId = Number(bcastRes.lastInsertRowid);
+
+  let status = 'Sent';
+  let providerStatus = 'ACCEPTED';
+  let providerMessageId = null;
+  let segments = 1;
+  let errorMessage = null;
+
+  try {
+    const dispatch = await smsEthiopia.sendSms(cleanPhone, trimmedMsg);
+    if (dispatch.sent) {
+      status = 'Sent';
+      providerStatus = dispatch.status || 'ACCEPTED';
+      providerMessageId = dispatch.id;
+      segments = dispatch.segments || 1;
+    } else {
+      status = 'Failed';
+      providerStatus = 'FAILED';
+      errorMessage = dispatch.error_message || 'SMS delivery rejected by gateway';
+    }
+  } catch (err) {
+    status = 'Failed';
+    providerStatus = 'FAILED';
+    errorMessage = err.message;
+  }
+
+  db.run(`
+    INSERT INTO sms_recipients 
+      (broadcast_id, student_id, parent_id, phone_number, message_content, status, provider_message_id, provider_status, segments, error_message, sent_at, delivered_at)
+    VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ${status === 'Sent' ? 'CURRENT_TIMESTAMP' : 'NULL'})
+  `, [broadcastId, studentObj?.id || null, cleanPhone, trimmedMsg, status, providerMessageId, providerStatus, segments, errorMessage]);
+
+  db.run(`
+    UPDATE sms_broadcasts 
+    SET sent_count = ?, failed_count = ?, status = ?
+    WHERE id = ?
+  `, [status === 'Sent' ? 1 : 0, status === 'Failed' ? 1 : 0, status === 'Sent' ? 'Completed' : 'Failed', broadcastId]);
+
+  logAudit(req, {
+    action: 'SEND_INDIVIDUAL_SMS',
+    entityType: 'SMS_BROADCAST',
+    entityId: broadcastId,
+    newValues: { phone: cleanPhone, student: studentObj?.full_name, status }
+  });
+
+  if (status === 'Failed') {
+    return res.status(502).json({ error: errorMessage || 'Failed to deliver SMS to gateway.' });
+  }
+
+  res.json({
+    success: true,
+    message: `SMS sent successfully to ${cleanPhone}.`,
+    broadcast_id: broadcastId
+  });
+});
+
 // POST /api/sms/result-broadcast (Auto-generate and dispatch Result SMS directly from DB results)
 router.post('/result-broadcast', authenticate, async (req, res) => {
   if ((req.user.role === 'directory' || req.user.role === 'director' || req.user.role === 'records') && !req.user.permissions?.includes('sms.result')) {

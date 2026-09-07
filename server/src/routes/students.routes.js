@@ -267,14 +267,33 @@ router.get('/:id', authenticate, (req, res) => {
     }
   }
 
-  // Tab 2: Parents Information
-  const parents = db.query(`
+  // Tab 2: Parents Information (With automatic family sibling detection)
+  const parentsRaw = db.query(`
     SELECT p.*, sp.relationship, sp.is_primary, sp.sms_enabled
     FROM parents p
     JOIN student_parents sp ON p.id = sp.parent_id
     WHERE sp.student_id = ?
     ORDER BY sp.is_primary DESC
   `, [student.id]);
+
+  const parents = parentsRaw.map(p => {
+    const siblings = db.query(`
+      SELECT s.id as student_id, s.student_id as student_code, s.full_name as student_name,
+             sec.full_name as class_section
+      FROM student_parents sp2
+      JOIN students s ON sp2.student_id = s.id
+      LEFT JOIN student_class_assignments csa ON s.id = csa.student_id AND csa.status = 'Active'
+      LEFT JOIN sections sec ON csa.section_id = sec.id
+      WHERE sp2.parent_id = ?
+    `, [p.id]);
+
+    return {
+      ...p,
+      is_one_family: siblings.length > 1,
+      family_status: siblings.length > 1 ? 'One Family (Auto-detected)' : 'Single Student',
+      children: siblings
+    };
+  });
 
   // Tab 3: Academic Results (Current Year)
   const currentMarks = db.query(`
@@ -424,15 +443,27 @@ router.post('/', authenticate, requirePermission('students.create'), (req, res) 
       [newStudentDbId, yearId, class_id, section_id]
     );
 
-    // 3. Parent Linking (Check if parent with phone already exists to reuse & link siblings!)
-    let parentRow = db.queryOne('SELECT id FROM parents WHERE phone_number = ?', [parent_phone.trim()]);
+    // 3. Parent Linking (Auto-detect One Family: match by phone number or father/guardian name)
+    const cleanPhone = parent_phone.trim();
+    const cleanPName = (parent_name || '').trim();
+    let parentRow = db.queryOne('SELECT id, full_name, phone_number FROM parents WHERE phone_number = ?', [cleanPhone]);
+    if (!parentRow && cleanPName) {
+      parentRow = db.queryOne('SELECT id, full_name, phone_number FROM parents WHERE LOWER(TRIM(full_name)) = LOWER(?)', [cleanPName]);
+    }
+
     let parentId;
+    let isAutoLinkedFamily = false;
     if (parentRow) {
       parentId = parentRow.id;
+      isAutoLinkedFamily = true;
+      // Update phone if missing or updated
+      if (cleanPhone && (!parentRow.phone_number || parentRow.phone_number.trim() === '')) {
+        db.run('UPDATE parents SET phone_number = ? WHERE id = ?', [cleanPhone, parentId]);
+      }
     } else {
       const parentRes = db.run(
         'INSERT INTO parents (full_name, phone_number, email, address) VALUES (?, ?, ?, ?)',
-        [parent_name ? parent_name.trim() : 'Parent of ' + full_name, parent_phone.trim(), parent_email || null, address || null]
+        [cleanPName || 'Parent of ' + full_name, cleanPhone, parent_email || null, address || null]
       );
       parentId = Number(parentRes.lastInsertRowid);
     }

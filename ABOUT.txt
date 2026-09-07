@@ -629,10 +629,38 @@ Date: 2026-09-07 (Release 3.9.2 - Single-Service Unified Render Full-Stack Deplo
     - Added root npm build and start scripts enabling single Web Service deployment on Render with zero split-hosting complexity.
 
 
+Date: 2026-09-07 (Release 3.9.3 - System English Standard, Direct Route Aliases, Auto Family Detection & SMS Upgrades)
+  • UI English Standardization (Preserved Amharic SMS Typing):
+    - Removed hardcoded Amharic UI labels, badges, headers, and buttons across the entire application.
+    - Updated MarkEntryPage actions from Amharic 'አስተካክል' and 'በማስቀመጥ ላይ...' to 'Save Marks' and 'Saving Marks...'.
+    - Cleaned Ethiopian motto and script from LandingPage, Navbar, Sidebar, and StudentIDLookupPage.
+    - Preserved full Amharic UTF-8 input capability in all SMS composition textareas for parent outreach.
+  • Direct Navigation Route Aliases:
+    - Added direct top-level path aliases (/dir, /tec, /admin, /reg, /id) alongside standard routes.
+    - /dir / /directory / /records -> Directory Dashboard.
+    - /tec / /teacher / /teachers -> Teacher Gradebook / Portal.
+    - /admin / /admin/login -> Executive Administrator Portal.
+    - /reg / /register -> Student Intake & Registration.
+    - /id / /id-manager / /id-lookup -> Student ID Card & Verification Lookup.
+  • Reliable Sign Out:
+    - Enhanced logout() in AuthContext to cleanly reset browser URL history to '/' and purge local tokens without getting trapped in auth redirects.
+  • Gradebook Non-attended Test & Optional Note:
+    - Added 'Non-attended Test' assessment type for tracking absent/zero-mark test entries.
+    - Made teacher adjustment note optional with fallback reason ('Score updated by teacher'), simplifying the mark editing workflow.
+  • Directory Parent Phone Search & Individual SMS:
+    - Added direct 'Send SMS' modal in Directory Student Search to dispatch individual SMS to student's parent phone.
+    - Added POST /api/sms/send-individual endpoint.
+  • Automated Sibling / Family Detection:
+    - Auto-detects multi-student families sharing the same parent phone number or father/guardian name.
+    - Highlights 'One Family (Auto-detected)' badge in Parent Directory and student dossiers without requiring manual sibling linking.
+  • Speed & Performance Optimizations:
+    - Ensured ultra-fast debounced searches, memoized filters, and SQLite query indexes.
+
+
 10. VERIFICATION & STATUS
 --------------------------------------------------------------------------------
 Last Updated: 2026-09-07 (01/01/2018 E.C.)
-Documentation Version: 3.9.2
+Documentation Version: 3.9.3
 Status: Production-Ready & Verified (Vite Build 0 Errors, Clean SQLite DB, 77/77 Automated Tests Passed, Unified Full-Stack Live on Render)
 ================================================================================
 

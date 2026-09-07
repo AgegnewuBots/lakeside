@@ -90,8 +90,8 @@ export default function MarkAdjustmentPage() {
 
   const handleSaveAdjustment = async (e) => {
     e.preventDefault();
-    if (!newMarkValue || !adjustReason.trim()) {
-      notify.error('Both new mark and a mandatory adjustment reason are required.');
+    if (!newMarkValue) {
+      notify.error('New mark is required.');
       return;
     }
 
@@ -105,7 +105,7 @@ export default function MarkAdjustmentPage() {
     try {
       const res = await api.put(`/marks/${selectedStudentForAdjust.mark_id}/adjust`, {
         new_mark: numMark,
-        reason: adjustReason.trim()
+        reason: adjustReason.trim() || 'Score updated by teacher'
       });
 
       notify.success(res.message || 'Mark adjusted and logged to immutable audit history!');
@@ -276,18 +276,17 @@ export default function MarkAdjustmentPage() {
 
             <div className="form-group">
               <label className="form-label">
-                Mandatory Reason for Adjustment <span style={{ color: '#EF4444' }}>*</span>
+                Note / Reason for Adjustment <span style={{ color: '#64748B', fontWeight: 500 }}>(Optional)</span>
               </label>
               <textarea
                 className="form-control"
                 rows={3}
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
-                placeholder="e.g. Re-evaluating question 4 calculation error verified with head of department"
-                required
+                placeholder="Optional note: e.g. Recalculated mark or question 4 verified"
               />
               <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                This reason will be permanently archived in the administrator audit log with timestamps and your identity.
+                Simple optional note to keep on record with your change history.
               </span>
             </div>
 

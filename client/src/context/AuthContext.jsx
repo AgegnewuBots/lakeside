@@ -37,6 +37,9 @@ export function AuthProvider({ children }) {
     } catch {}
     localStorage.removeItem('lakeside_token');
     setUser(null);
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
   };
 
   const hasPermission = (code) => {

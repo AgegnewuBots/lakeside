@@ -129,24 +129,12 @@ export default function Navbar({
           <div 
             className="navbar-brand" 
             onClick={() => onSelectPortal('landing')}
-            title="Lake Side Academy | ሌክ ሳይድ አካዳሚ"
+            title="Lake Side Academy"
           >
             <img src="/logo.png" alt="Lake Side Academy Crest" />
             <div>
               <div className="navbar-brand-title">
                 <span>Lake Side Academy</span>
-                <span style={{ 
-                  fontSize: '0.62rem', 
-                  background: 'rgba(245, 158, 11, 0.18)',
-                  color: '#FCD34D',
-                  padding: '1px 6px',
-                  borderRadius: '4px',
-                  fontWeight: 700,
-                  fontFamily: "'Noto Sans Ethiopic', sans-serif",
-                  border: '1px solid rgba(245, 158, 11, 0.3)'
-                }}>
-                  ሌክ ሳይድ አካዳሚ
-                </span>
               </div>
               <div className="navbar-brand-subtitle">School Administration Platform</div>
             </div>

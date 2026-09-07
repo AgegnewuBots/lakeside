@@ -140,9 +140,15 @@ router.put('/:id/adjust', authenticate, (req, res) => {
     return res.status(400).json({ error: 'New mark is required.' });
   }
 
-  if (!reason || !reason.trim()) {
+  if (reason !== undefined && (!reason || !reason.trim())) {
     return res.status(400).json({ error: 'A valid reason for mark adjustment is mandatory.' });
   }
+
+  const noteReason = (reason && typeof reason === 'string' && reason.trim()) 
+    ? reason.trim() 
+    : (remarks && typeof remarks === 'string' && remarks.trim()) 
+    ? remarks.trim() 
+    : 'Score adjusted by teacher';
 
   const currentMark = db.queryOne(`
     SELECT m.*, a.max_marks, a.name as assessment_name, a.class_id, a.section_id, a.subject_id,
@@ -188,7 +194,7 @@ router.put('/:id/adjust', authenticate, (req, res) => {
     db.run(`
       INSERT INTO mark_history (mark_id, assessment_id, student_id, previous_mark, new_mark, reason, changed_by_user_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [currentMark.id, currentMark.assessment_id, currentMark.student_id, currentMark.marks_obtained, parsedMark, reason.trim(), req.user.id]);
+    `, [currentMark.id, currentMark.assessment_id, currentMark.student_id, currentMark.marks_obtained, parsedMark, noteReason, req.user.id]);
 
     // 3. Security Audit Log with detailed diff
     logAudit(req, {

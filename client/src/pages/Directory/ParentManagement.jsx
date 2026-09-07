@@ -158,10 +158,17 @@ export default function ParentManagement({ onSelectStudent }) {
                     <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, color: isDark ? '#94A3B8' : '#64748B' }}>
                       Family Students
                     </div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: childCount > 1 ? '#0D9488' : (isDark ? '#F1F5F9' : '#1E293B') }}>
-                      {childCount === 0 ? '0 Linked Children' :
-                       childCount === 1 ? '1 Connected Child' :
-                       `${childCount} Connected Children (Siblings)`}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 800, color: childCount > 1 ? '#0D9488' : (isDark ? '#F1F5F9' : '#1E293B') }}>
+                        {childCount === 0 ? '0 Linked Children' :
+                         childCount === 1 ? '1 Connected Child' :
+                         `${childCount} Connected Children`}
+                      </span>
+                      {(p.is_auto_family || childCount > 1) && (
+                        <span className="badge badge-teal" style={{ fontSize: '0.7rem', padding: '0.15rem 0.45rem' }}>
+                          One Family (Auto-detected)
+                        </span>
+                      )}
                     </div>
                   </div>
                   <button

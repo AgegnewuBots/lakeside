@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
+import { useNotify } from '../../context/NotificationContext';
 import { useTheme } from '../../context/ThemeContext';
 import { formatToEthiopian } from '../../utils/ethiopianDate';
+import Modal from '../../components/Modal';
 import { 
   Search, 
   Users, 
@@ -12,7 +14,8 @@ import {
   Phone,
   User,
   Calendar,
-  Layers
+  Layers,
+  Send
 } from 'lucide-react';
 
 export default function StudentSearchPage({ onSelectStudent }) {
@@ -100,6 +103,39 @@ export default function StudentSearchPage({ onSelectStudent }) {
     performSearch('', '', '', selectedYearId);
   };
 
+  const handleOpenSmsModal = (student) => {
+    setSmsStudent(student);
+    setSmsMessage(`Dear Parent of ${student.full_name}, `);
+  };
+
+  const handleSendIndividualSms = async (e) => {
+    e.preventDefault();
+    if (!smsStudent?.parent_phone) {
+      notify.error('This student does not have a recorded parent phone number.');
+      return;
+    }
+    if (!smsMessage.trim()) {
+      notify.error('Message text cannot be blank.');
+      return;
+    }
+
+    setSmsSending(true);
+    try {
+      const res = await api.post('/sms/send-individual', {
+        student_id: smsStudent.id,
+        phone_number: smsStudent.parent_phone,
+        message: smsMessage.trim()
+      });
+      notify.success(res.message || 'SMS sent successfully!');
+      setSmsStudent(null);
+      setSmsMessage('');
+    } catch (err) {
+      notify.error(err.message || 'Failed to dispatch SMS.');
+    } finally {
+      setSmsSending(false);
+    }
+  };
+
   const selectedClassObj = classes.find(c => String(c.id) === String(selectedClassId));
 
   return (
@@ -117,7 +153,7 @@ export default function StudentSearchPage({ onSelectStudent }) {
         </p>
       </div>
 
-      {/* Main Search Bar Card (Section 38) */}
+      {/* Main Search Bar Card */}
       <div className="card" style={{ marginBottom: '1.75rem', borderTop: '4px solid #0D9488', padding: '1.5rem' }}>
         <div style={{ position: 'relative', width: '100%', marginBottom: '1.25rem' }}>
           <input
@@ -132,7 +168,7 @@ export default function StudentSearchPage({ onSelectStudent }) {
             }}
             value={searchTerm}
             onChange={handleInputChange}
-            placeholder="Search by 5-digit ID (e.g. 10001), Name (e.g. Han), Parent Phone..."
+            placeholder="Search by Parent Phone (e.g. 09...), 5-digit ID (e.g. 10001), or Name..."
             autoFocus
           />
           <Search
@@ -142,7 +178,7 @@ export default function StudentSearchPage({ onSelectStudent }) {
           />
           {searchTerm && (
             <button
-              onClick={handleClear}
+              onClick={() => { setSearchTerm(''); performSearch('', selectedClassId, selectedSectionId, selectedYearId); }}
               style={{
                 position: 'absolute',
                 right: '1rem',
@@ -150,8 +186,8 @@ export default function StudentSearchPage({ onSelectStudent }) {
                 transform: 'translateY(-50%)',
                 background: 'none',
                 border: 'none',
-                color: '#94A3B8',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                color: '#94A3B8'
               }}
             >
               <X size={18} />
@@ -159,54 +195,45 @@ export default function StudentSearchPage({ onSelectStudent }) {
           )}
         </div>
 
-        {/* Clean Filter Bar (Auto-current active year, Class / Grade optgroups) */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              background: isDark ? 'rgba(13,148,136,0.15)' : '#F0FDFA',
-              color: '#0D9488',
-              padding: '0.35rem 0.75rem',
-              borderRadius: '6px',
-              border: isDark ? '1px solid rgba(13,148,136,0.3)' : '1px solid #CCFBF1'
-            }}>
-              Year: 2018 E.C. (Active)
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#CBD5E1' : '#64748B' }}>Class / Grade:</span>
+        {/* Filters Row */}
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ minWidth: '170px' }}>
             <select
               className="form-control"
-              style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.82rem' }}
+              value={selectedYearId}
+              onChange={handleYearChange}
+              style={{ fontSize: '0.88rem' }}
+            >
+              <option value="">All Academic Years</option>
+              {years.map(y => (
+                <option key={y.id} value={y.id}>{y.name} {y.is_current ? '(Active)' : ''}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ minWidth: '170px' }}>
+            <select
+              className="form-control"
               value={selectedClassId}
               onChange={handleClassChange}
+              style={{ fontSize: '0.88rem' }}
             >
-              <option value="">All Classes & Grades (KG 1 - Grade 8)</option>
-              <option value="ALL_KG">All Kindergarten (KG 1 - KG 3)</option>
-              <option value="ALL_PRIMARY">All Primary Grades (Grade 1 - Grade 8)</option>
-              <optgroup label="Kindergarten">
-                {classes.filter(c => c.name.startsWith('KG')).map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </optgroup>
-              <optgroup label="Primary School (Grades 1 - 8)">
-                {classes.filter(c => !c.name.startsWith('KG')).map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </optgroup>
+              <option value="">All Classes</option>
+              <option value="ALL_KG">All Kindergarten (KG 1–3)</option>
+              <option value="ALL_PRIMARY">All Primary (Grades 1–8)</option>
+              {classes.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
             </select>
           </div>
 
           {selectedClassObj && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isDark ? '#CBD5E1' : '#64748B' }}>Section:</span>
+            <div style={{ minWidth: '150px' }}>
               <select
                 className="form-control"
-                style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.82rem' }}
                 value={selectedSectionId}
                 onChange={handleSectionChange}
+                style={{ fontSize: '0.88rem' }}
               >
                 <option value="">All Sections</option>
                 {selectedClassObj.sections?.map(s => (
@@ -281,13 +308,35 @@ export default function StudentSearchPage({ onSelectStudent }) {
                     {s.parent_phone || '—'}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <button
-                      onClick={() => onSelectStudent(s.id)}
-                      className="btn btn-primary btn-sm"
-                      style={{ background: '#0D9488', borderColor: '#0D9488', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-                    >
-                      <Eye size={13} /> Open 7-Tab Dossier
-                    </button>
+                    <div style={{ display: 'inline-flex', gap: '0.45rem' }}>
+                      {s.parent_phone && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSmsModal(s)}
+                          className="btn btn-secondary btn-sm"
+                          style={{
+                            fontSize: '0.78rem',
+                            padding: '0.25rem 0.55rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            color: '#0D9488',
+                            borderColor: isDark ? 'rgba(13,148,136,0.3)' : '#99F6E4'
+                          }}
+                          title={`Send individual SMS to ${s.parent_phone}`}
+                        >
+                          <Send size={13} /> Send SMS
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onSelectStudent(s.id)}
+                        className="btn btn-primary btn-sm"
+                        style={{ background: '#0D9488', borderColor: '#0D9488', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                      >
+                        <Eye size={13} /> Dossier
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -301,6 +350,65 @@ export default function StudentSearchPage({ onSelectStudent }) {
           </tbody>
         </table>
       </div>
+
+      {/* Individual Parent SMS Modal */}
+      {smsStudent && (
+        <Modal
+          isOpen={!!smsStudent}
+          onClose={() => setSmsStudent(null)}
+          title={`Send Individual SMS — Parent of ${smsStudent.full_name}`}
+        >
+          <form onSubmit={handleSendIndividualSms}>
+            <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: isDark ? '#1E293B' : '#F0FDFA', border: '1px solid #99F6E4', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: isDark ? '#94A3B8' : '#64748B' }}>Recipient Phone:</span>
+                <strong style={{ fontFamily: 'monospace', color: '#0D9488' }}>{smsStudent.parent_phone}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                <span style={{ color: isDark ? '#94A3B8' : '#64748B' }}>Student:</span>
+                <strong>{smsStudent.full_name} (#{smsStudent.student_id})</strong>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label" style={{ fontWeight: 700 }}>
+                SMS Message Text <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 500 }}>(Supports manual Amharic or English typing)</span>
+              </label>
+              <textarea
+                className="form-control"
+                rows={4}
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+                placeholder="Type SMS in English or Amharic (e.g. ውድ ወላጅ ወይም Dear Parent)..."
+                required
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748B', marginTop: '0.35rem' }}>
+                <span>Length: {smsMessage.length} chars (~{Math.ceil(smsMessage.length / 160) || 1} SMS)</span>
+                <span>Gateway: Ethio Telecom via SMSEthiopia</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => setSmsStudent(null)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={smsSending}
+                style={{ background: '#0D9488', borderColor: '#0D9488', fontWeight: 800 }}
+              >
+                <Send size={15} />
+                <span>{smsSending ? 'Sending SMS...' : 'Send SMS Now'}</span>
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

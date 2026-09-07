@@ -53,14 +53,64 @@ function AppContent() {
   const [dossierStudentId, setDossierStudentId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Check for direct administrative entrance via /admin
+  // Check for direct entrance via /dir, /tec, /admin, /reg, /id
   useEffect(() => {
-    const path = window.location.pathname;
+    const path = window.location.pathname.toLowerCase();
+    
+    // /admin or /admin/login
     if (path === '/admin' || path === '/admin/login') {
       if (user && user.role === 'admin') {
         setActivePortal('admin');
       } else {
         setLoginTarget('admin');
+        setActivePortal('login');
+      }
+    } 
+    // /dir or /directory or /records
+    else if (path === '/dir' || path === '/directory' || path === '/records') {
+      if (user) {
+        setActivePortal(user.role === 'teacher' ? 'teacher' : 'directory');
+        setDirectoryTab('dashboard');
+      } else {
+        setLoginTarget('directory');
+        setActivePortal('login');
+      }
+    }
+    // /tec or /teacher or /teachers
+    else if (path === '/tec' || path === '/teacher' || path === '/teachers') {
+      if (user) {
+        setActivePortal(user.role === 'teacher' ? 'teacher' : user.role === 'directory' ? 'directory' : 'teacher');
+        setTeacherTab('dashboard');
+      } else {
+        setLoginTarget('teacher');
+        setActivePortal('login');
+      }
+    }
+    // /reg or /register (Register student in Directory)
+    else if (path === '/reg' || path === '/register') {
+      if (user) {
+        if (user.role === 'teacher') {
+          setActivePortal('teacher');
+        } else {
+          setActivePortal('directory');
+          setDirectoryTab('register');
+        }
+      } else {
+        setLoginTarget('directory');
+        setActivePortal('login');
+      }
+    }
+    // /id or /id-manager or /id-lookup
+    else if (path === '/id' || path === '/id-manager' || path === '/id-lookup') {
+      if (user) {
+        if (user.role === 'teacher') {
+          setActivePortal('teacher');
+        } else {
+          setActivePortal('directory');
+          setDirectoryTab('id-lookup');
+        }
+      } else {
+        setLoginTarget('id-manager');
         setActivePortal('login');
       }
     }
@@ -173,8 +223,7 @@ function AppContent() {
           }}>
             <img src="/logo.png" alt="Lake Side Academy Crest" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F59E0B', marginBottom: '0.25rem' }}>Lake Side Academy</div>
-          <div style={{ fontSize: '1rem', color: '#5EEAD4', marginBottom: '0.5rem', fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>ሌክ ሳይድ አካዳሚ</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F59E0B', marginBottom: '0.5rem' }}>Lake Side Academy</div>
           <div style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Initializing secure institutional core...</div>
         </div>
       </div>

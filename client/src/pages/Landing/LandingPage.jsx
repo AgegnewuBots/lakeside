@@ -189,18 +189,6 @@ export default function LandingPage({ onSelectPortal }) {
               <span style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.02em', color: textPrimary }}>
                 Lake Side Academy
               </span>
-              <span style={{
-                fontSize: '0.65rem',
-                fontFamily: "'Noto Sans Ethiopic', sans-serif",
-                fontWeight: 700,
-                background: isDark ? 'rgba(245,158,11,0.15)' : '#FEF3C7',
-                color: isDark ? '#FCD34D' : '#92400E',
-                padding: '2px 7px',
-                borderRadius: '6px',
-                border: isDark ? '1px solid rgba(245,158,11,0.3)' : '1px solid #FDE68A'
-              }}>
-                ሌክ ሳይድ አካዳሚ
-              </span>
             </div>
             <div style={{ fontSize: '0.72rem', color: textSecondary, fontWeight: 500 }}>
               Elementary & Middle School Management Platform
@@ -461,10 +449,10 @@ export default function LandingPage({ onSelectPortal }) {
           width: '100%'
         }}>
           <div style={{ fontWeight: 700, color: textPrimary, marginBottom: '0.2rem' }}>
-            Lake Side Academy • ሌክ ሳይድ አካዳሚ
+            Lake Side Academy
           </div>
           <div style={{ fontSize: '0.75rem', opacity: 0.85, marginBottom: '0.5rem' }}>
-            "Excellence in Knowledge, Integrity in Character • በእውቀት የላቀ፣ በግብረገብነት የታነጸ"
+            "Excellence in Knowledge, Integrity in Character"
           </div>
           <div style={{ fontSize: '0.72rem', opacity: 0.65, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
             <ShieldCheck size={13} />

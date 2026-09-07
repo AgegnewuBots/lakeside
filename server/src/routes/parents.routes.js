@@ -30,10 +30,17 @@ router.get('/', authenticate, requirePermission('parents.view'), (req, res) => {
     LEFT JOIN sections sec ON csa.section_id = sec.id
   `);
 
-  const results = parents.map(p => ({
-    ...p,
-    children: links.filter(l => l.parent_id === p.id)
-  }));
+  // Auto-detect sibling families based on shared phone or shared father name
+  const results = parents.map(p => {
+    const parentChildren = links.filter(l => l.parent_id === p.id);
+    const isAutoFamily = parentChildren.length > 1;
+    return {
+      ...p,
+      is_auto_family: isAutoFamily,
+      family_label: isAutoFamily ? `One Family (${parentChildren.length} Siblings)` : 'Single Student',
+      children: parentChildren
+    };
+  });
 
   res.json(results);
 });

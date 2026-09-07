@@ -137,6 +137,14 @@ router.post('/', authenticate, (req, res) => {
     assessment_date
   } = req.body;
 
+  // Normalize assessment_type for database schema compatibility
+  let normalizedType = assessment_type;
+  if (assessment_type === 'NonAttended' || assessment_type === 'Non-attended Test' || assessment_type === 'Non-attended') {
+    normalizedType = 'Test';
+  } else if (!['Test', 'Mid', 'Final', 'Bonus', 'Custom'].includes(assessment_type)) {
+    normalizedType = 'Test';
+  }
+
   let yearId = academic_year_id;
   if (!yearId) {
     const curYear = db.queryOne('SELECT id FROM academic_years WHERE is_current = 1');
@@ -183,9 +191,6 @@ router.post('/', authenticate, (req, res) => {
       error: `Total assessment marks for this subject cannot exceed 100. Currently configured: ${currentTotal} points. Adding ${numericMaxMarks} points would make total ${currentTotal + numericMaxMarks} points (Exceeds 100). Remaining allowance: ${Math.max(0, 100 - currentTotal)} points.`
     });
   }
-
-  // Determine normalized assessment type
-  const normalizedType = ['Test', 'Mid', 'Final', 'Bonus'].includes(assessment_type) ? assessment_type : 'Test';
 
   const result = db.run(`
     INSERT INTO assessments (academic_year_id, term_id, class_id, section_id, subject_id, name, assessment_type, max_marks, weight_percentage, assessment_date, status)

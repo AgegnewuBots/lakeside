@@ -423,7 +423,7 @@ export default function StudentIDLookupPage() {
                       LAKE SIDE ACADEMY
                     </div>
                     <div style={{ fontSize: '0.78rem', color: '#F59E0B', fontWeight: 700 }}>
-                      ሌክ ሳይድ አካዳሚ &bull; Addis Ababa, Ethiopia
+                      Addis Ababa, Ethiopia
                     </div>
                   </div>
                 </div>

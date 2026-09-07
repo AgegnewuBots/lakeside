@@ -248,14 +248,6 @@ export default function Sidebar({
                 }}>
                   Lake Side Academy
                 </div>
-                <div style={{
-                  fontSize: '0.65rem',
-                  fontFamily: "'Noto Sans Ethiopic', sans-serif",
-                  color: isDark ? '#94A3B8' : '#0D9488',
-                  fontWeight: 700
-                }}>
-                  ሌክ ሳይድ አካዳሚ
-                </div>
               </div>
             )}
           </div>

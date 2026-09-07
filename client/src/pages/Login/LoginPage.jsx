@@ -77,12 +77,9 @@ export default function LoginPage({ onLoginSuccess, onCancel, targetPortal }) {
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </div>
-          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em', marginBottom: '0.15rem' }}>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em', marginBottom: '0.35rem' }}>
             Lake Side Academy
           </h2>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#D97706', marginBottom: '0.25rem', fontFamily: "'Noto Sans Ethiopic', sans-serif" }}>
-            ሌክ ሳይድ አካዳሚ
-          </div>
           <div style={{
             display: 'inline-block',
             padding: '2px 10px',
